@@ -30,7 +30,10 @@ cp FutuOpenD.xml.template secrets/FutuOpenD.xml
 # Generate at https://www.futunn.com/en/OpenAPI → Manage Key
 # Save as secrets/rsa_key.txt, then chmod 600
 
-# 5. Start
+# 5. (Optional) Set platform for ARM (Raspberry Pi)
+echo "PLATFORM=linux/arm64" >> .env
+
+# 6. Start
 docker compose up -d
 docker compose logs -f
 ```
@@ -41,6 +44,43 @@ curl http://localhost:11111/version
 ```
 
 ---
+
+## Platform Options
+
+The compose file uses `platform: linux/${PLATFORM:-amd64}`. Set `PLATFORM` in `.env`:
+
+| Platform | Use Case |
+|----------|----------|
+| `linux/amd64` | x86_64 desktops, servers, cloud VMs (default) |
+| `linux/arm64` | Raspberry Pi 3/4/5, ARM servers |
+
+## Image Variants
+
+Pull the variant that matches your platform:
+
+| Image Tag | OS | Arch | When to use |
+|-----------|-----|------|-------------|
+| `:latest` | Ubuntu 24.04 | amd64 | Default |
+| `:ubuntu-amd64` | Ubuntu 24.04 | amd64 | Explicit Ubuntu |
+| `:ubuntu-arm64` | Ubuntu 24.04 | arm64 | Raspberry Pi |
+| `:rocky-amd64` | Rocky Linux 9 | amd64 | RHEL-based preference |
+| `:rocky-arm64` | Rocky Linux 9 | arm64 | ARM + RHEL compat |
+| `:centos-amd64` | Rocky Linux 9 | amd64 | CentOS backward compat |
+| `:centos-arm64` | Rocky Linux 9 | arm64 | ARM + CentOS compat |
+| `:10.5.6508-*` | Both | Both | Version-pinned, e.g. `:10.5.6508-ubuntu-arm64` |
+
+```bash
+# Pull a specific variant
+docker pull shing1211/futuopend:ubuntu-arm64
+
+# Override image in .env (not set by default)
+echo "FUTU_IMAGE=shing1211/futuopend:rocky-amd64" >> .env
+```
+
+**ARM performance note:** Futu provides x86_64 binaries only. ARM builds use QEMU
+emulation (~2-5x slower than native). For latency-sensitive trading on Pi, consider
+[box64](https://github.com/ptitSeb/box64) — install it on the host and the container
+uses it automatically.
 
 ## Files
 
@@ -74,7 +114,10 @@ cd futuopend
 ./dockerbuild.sh ubuntu
 ```
 
-Then reference the locally built `shing1211/futuopend:latest` in the compose file.
+Then reference the locally built image:
+```bash
+echo "FUTU_IMAGE=shing1211/futuopend:latest" >> .env
+```
 
 ---
 
