@@ -87,9 +87,12 @@ uses it automatically.
 | File | Purpose |
 |------|---------|
 | `docker-compose.yaml` | Docker Compose deployment |
+| `docker-compose.multi.yaml` | Multi-instance deployment (two accounts) |
 | `.env.example` | Runtime env vars template |
 | `FutuOpenD.xml.template` | Config template with env-var substitution |
 | `secrets/` | Your config and keys (gitignored) |
+| `scripts/monitor.sh` | Health monitor with auto-restart |
+| `scripts/backup.sh` | Backup/restore persistent data |
 | `docs/api.md` | API protocol documentation |
 | `docs/configuration.md` | Full config reference |
 | `docs/security.md` | Security hardening guide |
