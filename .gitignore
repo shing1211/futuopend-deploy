@@ -1,5 +1,10 @@
 .env
+.env-a
+.env-b
 secrets/
+secrets-a/
+secrets-b/
+backups/
 FutuOpenD.xml
 **/*.pem
 **/*.key

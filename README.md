@@ -96,6 +96,29 @@ uses it automatically.
 
 ---
 
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/monitor.sh` | Health monitor — one-shot check or `--watch` loop, auto-restart on failure |
+| `scripts/backup.sh` | Backup/restore persistent data volume |
+
+## Multi-Instance
+
+Run two accounts side-by-side:
+
+```bash
+mkdir -p secrets-a secrets-b
+cp FutuOpenD.xml.template secrets-a/FutuOpenD.xml
+cp FutuOpenD.xml.template secrets-b/FutuOpenD.xml
+# edit each config with different accounts
+docker compose -f docker-compose.multi.yaml up -d
+```
+
+Instance `a` uses ports 11111/11112, instance `b` uses 21111/21112.
+
+---
+
 ## Documentation
 
 - [API Protocol Reference](docs/api.md)

@@ -1,0 +1,64 @@
+# Multi-instance FutuOpenD deployment.
+# Run two accounts side-by-side with separate configs and ports.
+#
+# Usage:
+#   mkdir -p secrets-a secrets-b
+#   cp FutuOpenD.xml.template secrets-a/FutuOpenD.xml
+#   cp FutuOpenD.xml.template secrets-b/FutuOpenD.xml
+#   # edit both configs with different accounts
+#   docker compose -f docker-compose.multi.yaml up -d
+#
+services:
+  futuopend-a:
+    image: ${FUTU_IMAGE:-shing1211/futuopend:latest}
+    container_name: futuopend-a
+    restart: unless-stopped
+    platform: linux/${PLATFORM:-amd64}
+    env_file:
+      - path: .env-a
+        required: false
+    environment:
+      - TZ=${TZ:-Asia/Hong_Kong}
+    volumes:
+      - ./secrets-a/FutuOpenD.xml:/run/secrets/FutuOpenD.xml:ro
+      - ./secrets-a/rsa_key.txt:/run/secrets/rsa_key.txt:ro
+      - futuopend-data-a:/home/futuopend/.com.futunn.FutuOpenD
+    ports:
+      - "11111:11111"
+      - "11112:11112"
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "FutuOpenD"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    stop_grace_period: 30s
+
+  futuopend-b:
+    image: ${FUTU_IMAGE:-shing1211/futuopend:latest}
+    container_name: futuopend-b
+    restart: unless-stopped
+    platform: linux/${PLATFORM:-amd64}
+    env_file:
+      - path: .env-b
+        required: false
+    environment:
+      - TZ=${TZ:-Asia/Hong_Kong}
+    volumes:
+      - ./secrets-b/FutuOpenD.xml:/run/secrets/FutuOpenD.xml:ro
+      - ./secrets-b/rsa_key.txt:/run/secrets/rsa_key.txt:ro
+      - futuopend-data-b:/home/futuopend/.com.futunn.FutuOpenD
+    ports:
+      - "21111:11111"
+      - "21112:11112"
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "FutuOpenD"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    stop_grace_period: 30s
+
+volumes:
+  futuopend-data-a:
+  futuopend-data-b:
