@@ -1,0 +1,28 @@
+services:
+  futuopend:
+    image: shing1211/futuopend:latest
+    container_name: futuopend
+    restart: unless-stopped
+    platform: linux/${PLATFORM:-amd64}
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TZ=${TZ:-Asia/Hong_Kong}
+    volumes:
+      - ./secrets/FutuOpenD.xml:/run/secrets/FutuOpenD.xml:ro
+      - ./secrets/rsa_key.txt:/run/secrets/rsa_key.txt:ro
+      - futuopend-data:/home/futuopend/.com.futunn.FutuOpenD
+    ports:
+      - "11111:11111"
+      - "11112:11112"
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "FutuOpenD"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    stop_grace_period: 30s
+
+volumes:
+  futuopend-data:

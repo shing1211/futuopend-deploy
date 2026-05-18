@@ -1,0 +1,6 @@
+.env
+secrets/
+FutuOpenD.xml
+**/*.pem
+**/*.key
+**/.rsa*
