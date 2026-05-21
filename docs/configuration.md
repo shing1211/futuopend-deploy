@@ -1,8 +1,16 @@
 # FutuOpenD.xml Configuration Reference
 
-Every tag FutuOpenD v10.5.6508 understands, documented with examples. Start with the [`FutuOpenD.xml.template`](../FutuOpenD.xml.template) in the repo root — it's pre-wired with env-var substitution and sensible defaults.
+Every tag FutuOpenD v10.6.6608 understands, documented with examples. Start with the [`FutuOpenD.xml.template`](../FutuOpenD.xml.template) in the repo root — it's pre-wired with env-var substitution and sensible defaults.
 
 > **Disclaimer:** This is an unofficial community packaging. Not affiliated with, endorsed by, or supported by Futu Securities or moomoo.
+
+---
+
+## New in v10.6.6608
+
+- **Conditional Stock Screening API** — server-side stock screening with custom filters
+- **Fundamental Data API** — financial statements, analyst ratings, dividend history, shareholder data
+- **moomoo Australia Simulated Trading Account** — AU paper trading support
 
 ---
 
