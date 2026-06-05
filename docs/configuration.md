@@ -1,10 +1,15 @@
 # FutuOpenD.xml Configuration Reference
 
-Every tag FutuOpenD v10.6.6608 understands, documented with examples. Start with the [`FutuOpenD.xml.template`](../FutuOpenD.xml.template) in the repo root — it's pre-wired with env-var substitution and sensible defaults.
+Every tag FutuOpenD v10.7.6708 understands, documented with examples. Start with the [`FutuOpenD.xml.template`](../FutuOpenD.xml.template) in the repo root — it's pre-wired with env-var substitution and sensible defaults.
 
 > **Disclaimer:** This is an unofficial community packaging. Not affiliated with, endorsed by, or supported by Futu Securities or moomoo.
 
 ---
+
+## New in v10.7.6708
+
+- No public release notes available — `FutuOpenD.xml` config schema is **byte-identical to 10.6.6608**
+- 5 new vendored libraries shipped in the binary (`libcrypto.so.3`, `libcurl.so.4`, `libf3cnet.so`, `libprotobuf.so.32`, `libssl.so.3`); new APIs are server-side, no XML changes required
 
 ## New in v10.6.6608
 
