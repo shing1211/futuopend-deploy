@@ -1,10 +1,19 @@
 # FutuOpenD.xml Configuration Reference
 
-Every tag FutuOpenD v10.7.6708 understands, documented with examples. Start with the [`FutuOpenD.xml.template`](../FutuOpenD.xml.template) in the repo root — it's pre-wired with env-var substitution and sensible defaults.
+Every tag FutuOpenD v10.8.6808 understands, documented with examples. Start with the [`FutuOpenD.xml.template`](../FutuOpenD.xml.template) in the repo root — it's pre-wired with env-var substitution and sensible defaults.
 
 > **Disclaimer:** This is an unofficial community packaging. Not affiliated with, endorsed by, or supported by Futu Securities or moomoo.
 
 ---
+
+## New in v10.8.6808
+
+- **Search API** — keyword search to find any asset by ticker, name, or keyword
+- **Search API** — news, announcements, and ratings search (one keyword, results from all sources)
+- **Chart Indicators** — all technical indicators supported in Mai Language and Python
+- **Comprehensive Options Analysis** — IV/HV, Put/Call Ratio, 0DTE Options, Upcoming Earnings, Seller Dashboard
+- **Market Fundamentals API** — Institutional Tracker, Macroeconomic Data, Dividend & Earnings Calendars, Industry Chain, Market Movers, Fed Rate Projections
+- Config schema unchanged — `FutuOpenD.xml` byte-identical to 10.7.6708
 
 ## New in v10.7.6708
 

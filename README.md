@@ -2,7 +2,7 @@
 
 > Run [FutuOpenD](https://openapi.futunn.com/futu-api-doc/) — the local gateway for Futu's trading API — in Docker.
 
-[![FutuOpenD v10.7.6708](https://img.shields.io/badge/FutuOpenD-v10.7.6708-blue)](https://openapi.futunn.com/futu-api-doc/)
+[![FutuOpenD v10.8.6808](https://img.shields.io/badge/FutuOpenD-v10.8.6808-blue)](https://openapi.futunn.com/futu-api-doc/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 This repo provides **Docker Compose configurations** for running FutuOpenD. The image is built by the [futuopend](https://github.com/shing1211/futuopend) project.
@@ -67,7 +67,7 @@ Pull the variant that matches your platform:
 | `:rocky-arm64` | Rocky Linux 9 | arm64 | ARM + RHEL compat |
 | `:centos-amd64` | Rocky Linux 9 | amd64 | CentOS backward compat |
 | `:centos-arm64` | Rocky Linux 9 | arm64 | ARM + CentOS compat |
-| `:10.7.6708-*` | Both | Both | Version-pinned, e.g. `:10.7.6708-ubuntu-arm64` |
+| `:10.8.6808-*` | Both | Both | Version-pinned, e.g. `:10.8.6808-ubuntu-arm64` |
 
 ```bash
 # Pull a specific variant
