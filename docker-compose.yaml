@@ -14,8 +14,8 @@ services:
       - ./secrets/rsa_key.txt:/run/secrets/rsa_key.txt:ro
       - futuopend-data:/home/futuopend/.com.futunn.FutuOpenD
     ports:
-      - "11111:11111"
-      - "11112:11112"
+      - "11113:11111"
+      - "11114:11112"
     healthcheck:
       test: ["CMD", "pgrep", "-x", "FutuOpenD"]
       interval: 30s

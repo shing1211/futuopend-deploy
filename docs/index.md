@@ -61,7 +61,7 @@ ARM builds use QEMU emulation and may take longer to start. Increase `start_peri
 
 For latency-sensitive trading on Raspberry Pi, consider installing [box64](https://github.com/ptitSeb/box64) on the host.
 
-**Connection refused on ports 11111/11112**
+**Connection refused on ports 11113/11114**
 
 Check the container is running:
 
@@ -78,7 +78,7 @@ docker compose logs futuopend
 Verify ports are not in use:
 
 ```bash
-lsof -i :11111
+lsof -i :11113
 ```
 
 **Invalid MD5 password hash**

@@ -67,7 +67,7 @@ docker compose logs -f
 ## Verify
 
 ```bash
-curl http://localhost:11111/version
+curl http://localhost:11113/version
 ```
 
 ## Troubleshooting

@@ -43,7 +43,7 @@ docker compose logs -f
 
 **Verify:**
 ```bash
-curl http://localhost:11111/version
+curl http://localhost:11113/version
 ```
 
 ---
@@ -143,10 +143,10 @@ Instance `a` uses ports 11111/11112, instance `b` uses 21111/21112.
 - ARM builds use QEMU emulation and may take longer to start. Increase `start_period` in the compose file.
 - For latency-sensitive trading on Pi, consider installing [box64](https://github.com/ptitSeb/box64) on the host.
 
-**Connection refused on ports 11111/11112**
+**Connection refused on ports 11113/11114**
 - Check the container is running: `docker compose ps`
 - Check logs: `docker compose logs futuopend`
-- Verify ports are not in use: `lsof -i :11111`
+- Verify ports are not in use: `lsof -i :11113`
 
 **Invalid MD5 password hash**
 - Ensure your password hash is 32 hex characters (no spaces or newlines)
