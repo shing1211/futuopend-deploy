@@ -12,9 +12,12 @@
 
   NOTE: As of v10.10+, FutuOpenD no longer reads login credentials from this
   file. Set FUTU_ACCOUNT in your environment — the entrypoint.sh passes
-  --login_account and --login_by_remember=1 via CLI arguments automatically.
+  -login_account and -login_by_remember=1 via CLI arguments automatically.
 
-  All values support ${VAR_NAME} environment variable substitution.
+  The container entrypoint renders ${VAR_NAME} placeholders with envsubst at
+  start (FutuOpenD itself does NOT expand environment variables). Provide values
+  via the environment; docker-compose supplies defaults. Use ${VAR} only
+  (no ${VAR:-default} syntax).
 
   Config reference: https://github.com/shing1211/futuopend-deploy/blob/main/docs/configuration.md
   Official docs:    https://openapi.futunn.com/futu-api-doc/
@@ -23,25 +26,25 @@
   <!-- ── Basic Parameters ──────────────────────────────────────────── -->
   <!-- ip                 : Protocol listening address. Default: 127.0.0.1 -->
   <!--                    : Use 0.0.0.0 to accept connections from any interface -->
-  <ip>${FUTU_IP:-0.0.0.0}</ip>
+  <ip>${FUTU_IP}</ip>
 
   <!-- api_port           : TCP API listening port. Default: 11111 -->
-  <api_port>${FUTU_API_PORT:-11111}</api_port>
+  <api_port>${FUTU_API_PORT}</api_port>
 
   <!-- lang              : Language. Options: en (English), chs (Simplified Chinese) -->
-  <lang>${FUTU_LANG:-en}</lang>
+  <lang>${FUTU_LANG}</lang>
 
   <!-- ── Advanced Parameters ──────────────────────────────────────── -->
 
   <!-- log_level         : Verbosity. Options: no, debug, info, warning, error, fatal -->
   <!--                     During development: debug. In production: info. -->
-  <log_level>${FUTU_LOG_LEVEL:-info}</log_level>
+  <log_level>${FUTU_LOG_LEVEL}</log_level>
 
   <!-- log_path          : Custom log directory. Leave unset to use the default. -->
   <!-- <log_path>/var/log/futuopend</log_path> -->
 
   <!-- push_proto_type   : Push protocol format. 0: protobuf, 1: JSON -->
-  <push_proto_type>${FUTU_PUSH_PROTO:-0}</push_proto_type>
+  <push_proto_type>${FUTU_PUSH_PROTO}</push_proto_type>
 
   <!-- qot_push_frequency : Max subscription push frequency in milliseconds.
                            Candlesticks and timeframes are not throttled.
@@ -49,10 +52,10 @@
   <!-- <qot_push_frequency>1000</qot_push_frequency> -->
 
   <!-- telnet_ip          : Telnet debug interface bind address. Default: 127.0.0.1 -->
-  <telnet_ip>${FUTU_TELNET_IP:-0.0.0.0}</telnet_ip>
+  <telnet_ip>${FUTU_TELNET_IP}</telnet_ip>
 
   <!-- telnet_port       : Telnet debug interface port. Required for first-login SMS/CAPTCHA 2FA. -->
-  <telnet_port>${FUTU_TELNET_PORT:-22222}</telnet_port>
+  <telnet_port>${FUTU_TELNET_PORT}</telnet_port>
 
   <!-- rsa_private_key   : Path to RSA private key for API encryption.
                            REQUIRED for trading over the network (when ip is 0.0.0.0).
@@ -61,7 +64,7 @@
   <rsa_private_key>${FUTU_RSA_KEY}</rsa_private_key>
 
   <!-- price_reminder_push : Receive price reminder notifications. 0: off, 1: on -->
-  <price_reminder_push>${FUTU_PRICE_REMINDER:-1}</price_reminder_push>
+  <price_reminder_push>${FUTU_PRICE_REMINDER}</price_reminder_push>
 
   <!-- auto_hold_quote_right : Auto-grab highest quote right after being kicked. 0: off, 1: on -->
   <!--
@@ -76,7 +79,7 @@
     UTC-11: -11 | ... | UTC-1: -1
     Example for Hong Kong: UTC+8
   -->
-  <!-- <future_trade_api_time_zone>UTC+8</future_trade_api_time_zone> -->
+  <future_trade_api_time_zone>${FUTU_FUTURE_TZ}</future_trade_api_time_zone>
 
   <!-- ── WebSocket Parameters ─────────────────────────────────────── -->
 

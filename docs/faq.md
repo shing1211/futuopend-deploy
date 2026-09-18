@@ -63,7 +63,7 @@ On first run, FutuOpenD enters interactive login mode. After successful login, c
 
 ### What is remember-login and how does it work?
 
-FutuOpenD v10.10+ caches your login credentials locally after the first successful interactive login. On subsequent runs, it reuses the cached session automatically via `--login_by_remember=1`.
+FutuOpenD v10.10+ caches your login credentials locally after the first successful interactive login. On subsequent runs, it reuses the cached session automatically via `-login_by_remember=1`.
 
 **Benefits:**
 - No password in config files or environment variables
@@ -372,7 +372,7 @@ To change the container-internal port:
 
 2. **Check the container's built-in config:**
    ```bash
-   docker exec futuopend ls /usr/local/bin/FutuOpenD/
+   docker exec futuopend ls -l /usr/local/bin/FutuOpenD.xml
    ```
 
 3. **Check disk space:**

@@ -38,7 +38,7 @@
 | Host Port | Container Port | Protocol | Description |
 |-----------|----------------|----------|-------------|
 | `11113` | `11111` | TCP | Main trading and quote API |
-| `11114` | `11112` | WebSocket | Real-time push, web clients |
+| `11114` | `11112` | WebSocket | Real-time push (disabled unless `FUTU_WS_PORT` set) |
 | `22222` | `22222` | Telnet | Debug console (internal) |
 
 ## Multi-Instance Deployment

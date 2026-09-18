@@ -166,10 +166,10 @@ WebSocket clients connect to this endpoint for real-time data push. Supports bot
 
 ```javascript
 // JavaScript example
-const ws = new WebSocket('ws://localhost:11112');
+const ws = new WebSocket('ws://localhost:11114');
 
 // Or with TLS (if configured)
-const wss = new WebSocket('wss://localhost:11112');
+const wss = new WebSocket('wss://localhost:11114');
 
 ws.onopen = () => {
     // Send InitConnect
@@ -356,7 +356,7 @@ print(state)
 
 ```javascript
 class FutuWS {
-    constructor(url = 'ws://127.0.0.1:11112') {
+    constructor(url = 'ws://127.0.0.1:11114') {
         this.ws = new WebSocket(url);
         this.serialNo = 0;
         this.pending = new Map();

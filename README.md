@@ -22,14 +22,16 @@ docker pull shing1211/futuopend:latest
 # 2. Clone this repo & configure
 cd futuopend-deploy
 cp .env.example .env
-# edit .env — set FUTU_ACCOUNT to your Futu ID (no password needed)
+# FIRST RUN only: log in interactively WITHOUT FUTU_ACCOUNT, then set it for restarts
+#   docker compose run --rm -it -e FUTU_ACCOUNT= futuopend
+# Every other run: set FUTU_ACCOUNT in .env (no password needed)
 
 # 3. (Optional) Add RSA key for trading
 # Generate at https://www.futunn.com/en/OpenAPI → Manage Key
 # Save as secrets/rsa_key.txt, then chmod 600
 
 # 4. (Optional) Set platform for ARM (Raspberry Pi)
-echo "PLATFORM=linux/arm64" >> .env
+echo "PLATFORM=arm64" >> .env
 
 # 5. Start
 docker compose up -d
@@ -58,9 +60,9 @@ Pull the variant that matches your platform:
 
 | Image Tag | OS | Arch | When to use |
 |-----------|-----|------|-------------|
-| `:latest` | Ubuntu 24.04 | amd64 | Default |
-| `:ubuntu-amd64` | Ubuntu 24.04 | amd64 | Explicit Ubuntu |
-| `:ubuntu-arm64` | Ubuntu 24.04 | arm64 | Raspberry Pi |
+| `:latest` | Ubuntu 26.04 | amd64 | Default |
+| `:ubuntu-amd64` | Ubuntu 26.04 | amd64 | Explicit Ubuntu |
+| `:ubuntu-arm64` | Ubuntu 26.04 | arm64 | Raspberry Pi |
 | `:rocky-amd64` | Rocky Linux 9 | amd64 | RHEL-based preference |
 | `:rocky-arm64` | Rocky Linux 9 | arm64 | ARM + RHEL compat |
 | `:centos-amd64` | Rocky Linux 9 | amd64 | CentOS backward compat |

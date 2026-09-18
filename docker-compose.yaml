@@ -9,6 +9,16 @@ services:
         required: false
     environment:
       - TZ=${TZ:-Asia/Hong_Kong}
+      - FUTU_IP=${FUTU_IP:-0.0.0.0}
+      - FUTU_API_PORT=${FUTU_API_PORT:-11111}
+      - FUTU_LANG=${FUTU_LANG:-en}
+      - FUTU_LOG_LEVEL=${FUTU_LOG_LEVEL:-info}
+      - FUTU_PUSH_PROTO=${FUTU_PUSH_PROTO:-0}
+      - FUTU_TELNET_IP=${FUTU_TELNET_IP:-0.0.0.0}
+      - FUTU_TELNET_PORT=${FUTU_TELNET_PORT:-22222}
+      - FUTU_RSA_KEY=${FUTU_RSA_KEY:-/run/secrets/rsa_key.txt}
+      - FUTU_PRICE_REMINDER=${FUTU_PRICE_REMINDER:-1}
+      - FUTU_FUTURE_TZ=${FUTU_FUTURE_TZ:-UTC+8}
     volumes:
       - ./FutuOpenD.xml:/usr/local/bin/FutuOpenD.xml:ro
       - ./secrets/rsa_key.txt:/run/secrets/rsa_key.txt:ro

@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docker-compose.yaml` / `docker-compose.multi.yaml`: re-added the `./FutuOpenD.xml` config mount (dropped in 1.0.6), so the env-substituted template is actually read by OpenD.
 - `docker-compose.multi.yaml`: instance B now publishes Telnet on `22223` (was `22222`, colliding with instance A).
 
+- Config is rendered by the container entrypoint via `envsubst`: `FutuOpenD.xml.template` now uses `${VAR}` (no `:-default`) and `docker-compose*.yaml` supply defaults, because FutuOpenD does not expand environment variables.
+
 ### Changed
 
 - `FutuOpenD.xml.template`: `<ip>` and `<telnet_ip>` default to `0.0.0.0`, and `<telnet_port>` is enabled by default — required for host port mapping and first-login 2FA.
@@ -86,7 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Monitoring stack (`docker-compose.monitoring.yaml`) with Prometheus + Grafana + cAdviso
+- Monitoring stack (`docker-compose.monitoring.yaml`) with Prometheus + Grafana + cAdvisor
 - Pre-built Grafana dashboard for FutuOpenD container health
 - FAQ documentation page (`docs/faq.md`) covering common questions
 - Docs preview workflow for PRs

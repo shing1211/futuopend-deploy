@@ -11,7 +11,7 @@ Every tag FutuOpenD v10.11.7108 understands, documented with examples. Start wit
 **Breaking change:** As of v10.10.7008, FutuOpenD no longer reads `<login_account>` or `<login_pwd_md5>` from `FutuOpenD.xml`. Credentials must now be passed via CLI arguments:
 
 ```bash
-FutuOpenD --login_account=your_account_id --login_by_remember=1
+FutuOpenD -login_account=your_account_id -login_by_remember=1
 ```
 
 The `futuopend` Docker image handles this automatically — set `FUTU_ACCOUNT` in your environment and the entrypoint passes the correct CLI args. No credentials need to be in `FutuOpenD.xml` any more.
@@ -303,15 +303,15 @@ A triggered DT Call requires depositing the full call amount to clear.
 
 ## Environment Variable Substitution
 
-FutuOpenD resolves `${VAR_NAME}` patterns at startup. Docker injects env vars automatically — no config file rewrites needed.
+FutuOpenD does **not** expand environment variables itself. The image's entrypoint renders `${VAR_NAME}` placeholders with `envsubst` at container start, using the values Docker injects. Use `${VAR}` only — the `${VAR:-default}` syntax is not supported.
 
 ```xml
 <rsa_private_key>${FUTU_RSA_KEY}</rsa_private_key>
-<ip>${FUTU_IP:-127.0.0.1}</ip>
-<log_level>${FUTU_LOG_LEVEL:-info}</log_level>
+<ip>${FUTU_IP}</ip>
+<log_level>${FUTU_LOG_LEVEL}</log_level>
 ```
 
-The `:-default` syntax works too — it falls back if the variable isn't set.
+Defaults come from `docker-compose.yaml`/`.env`, and the entrypoint exports fallbacks for any variable that is unset.
 
 **Via Docker Compose:**
 
@@ -346,10 +346,12 @@ docker run \
 | `FUTU_TELNET_IP` | `<telnet_ip>` | `0.0.0.0` |
 | `FUTU_TELNET_PORT` | `<telnet_port>` | `22222` |
 | `FUTU_API_PORT` | `<api_port>` | `11111` |
-| `FUTU_WS_PORT` | `<websocket_port>` | _(unset)_ |
+| `FUTU_WS_PORT` | CLI `-websocket_port` | _(unset — WebSocket off)_ |
 | `FUTU_LOG_LEVEL` | `<log_level>` | `info` |
 | `FUTU_LANG` | `<lang>` | `en` |
 | `FUTU_PUSH_PROTO` | `<push_proto_type>` | `0` (protobuf) |
+| `FUTU_FUTURE_TZ` | `<future_trade_api_time_zone>` | `UTC+8` |
+| `FUTU_AREA_CODE` | CLI `-area_code` | `+852` |
 
 ---
 
