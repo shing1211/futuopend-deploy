@@ -1,0 +1,109 @@
+name: Version Bump
+
+# Triggered manually:
+#   gh workflow run version-bump.yml -f version=10.12.7208
+# Or from the futuopend PR body link after merging the futuopend bump.
+#
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New FutuOpenD version to update to (e.g. 10.12.7208)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    name: Bump to ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate version
+        run: |
+          NEW_VER="${{ inputs.version }}"
+          if ! [[ "$NEW_VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "ERROR: Invalid version format: $NEW_VER"
+            exit 1
+          fi
+          echo "Bumping to: $NEW_VER"
+
+      - name: Read current version
+        id: current
+        run: |
+          # README may have CRLF; strip \r first.
+          CURRENT=$(tr -d '\r' < README.md \
+                      | grep -oE 'FutuOpenD-v[0-9]+\.[0-9]+\.[0-9]+' \
+                      | head -1 \
+                      | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' \
+                      || echo "")
+          if [ -z "$CURRENT" ]; then
+            CURRENT=$(tr -d '\r' < FutuOpenD.xml.template \
+                        | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' \
+                        | head -1 \
+                        | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' \
+                        || echo "")
+          fi
+          if [ -z "$CURRENT" ]; then
+            echo "ERROR: Could not determine current FutuOpenD version" >&2
+            exit 1
+          fi
+          echo "current_version=$CURRENT" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT"
+
+      - name: Patch version files
+        run: |
+          NEW_VER="${{ inputs.version }}"
+          CURRENT="${{ steps.current.outputs.current_version }}"
+          echo "Patching $CURRENT → $NEW_VER..."
+
+          # README.md — badge and variant table (CRLF-safe)
+          tr -d '\r' < README.md | sed "s/${CURRENT}/${NEW_VER}/g" > README.md.tmp && mv README.md.tmp README.md
+          echo "  patched: README.md"
+
+          # docs/configuration.md
+          if [ -f docs/configuration.md ]; then
+            tr -d '\r' < docs/configuration.md | sed "s/${CURRENT}/${NEW_VER}/g" > docs/configuration.md.tmp && mv docs/configuration.md.tmp docs/configuration.md
+            echo "  patched: docs/configuration.md"
+          fi
+
+          # docs/image-variants.md
+          if [ -f docs/image-variants.md ]; then
+            tr -d '\r' < docs/image-variants.md | sed "s/${CURRENT}/${NEW_VER}/g" > docs/image-variants.md.tmp && mv docs/image-variants.md.tmp docs/image-variants.md
+            echo "  patched: docs/image-variants.md"
+          fi
+
+          # FutuOpenD.xml.template — version comment
+          if [ -f FutuOpenD.xml.template ]; then
+            tr -d '\r' < FutuOpenD.xml.template | sed "s/${CURRENT}/${NEW_VER}/g" > FutuOpenD.xml.template.tmp && mv FutuOpenD.xml.template.tmp FutuOpenD.xml.template
+            echo "  patched: FutuOpenD.xml.template"
+          fi
+
+          echo ""
+          echo "Changes:"
+          git diff --stat
+
+      - name: Commit and push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VER="${{ inputs.version }}"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deps): update FutuOpenD to $NEW_VER"
+            git push origin main
+            echo "Committed and pushed."
+          else
+            echo "No changes; already at $NEW_VER."
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Version Bump: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Updated `futuopend-deploy` to FutuOpenD **${{ inputs.version }}**." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Next: [Create a release](https://github.com/shing1211/futuopend-deploy/releases/new?tag=v{{ inputs.version }}) for futuopend-deploy." >> $GITHUB_STEP_SUMMARY

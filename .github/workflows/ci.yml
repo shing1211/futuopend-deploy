@@ -88,3 +88,37 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
+
+  image-tag-verify:
+    name: Verify Docker image tag exists
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract version from README
+        id: version
+        run: |
+          # README may have CRLF line endings; strip \r before matching.
+          VER=$(tr -d '\r' < README.md | grep -oE 'FutuOpenD-v[0-9]+\.[0-9]+\.[0-9]+' | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          if [ -z "$VER" ]; then
+            echo "ERROR: Could not extract FutuOpenD version from README.md" >&2
+            exit 1
+          fi
+          echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "Referenced FutuOpenD version: $VER"
+
+      - name: Check tag exists on Docker Hub
+        id: check
+        run: |
+          VER="${{ steps.version.outputs.version }}"
+          HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" \
+            "https://registry.hub.docker.com/v2/repositories/shing1211/futuopend/tags/${VER}-ubuntu-amd64/")
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "Tag shing1211/futuopend:${VER}-ubuntu-amd64 found on Docker Hub."
+          else
+            echo "ERROR: Tag shing1211/futuopend:${VER}-ubuntu-amd64 NOT FOUND on Docker Hub (HTTP $HTTP_CODE)."
+            echo "Hint: run 'gh workflow run version-bump.yml -f version=$VER' in futuopend-deploy to update, or build/push the image first."
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "Docker image tag **${{ steps.version.outputs.version }}** verified on Docker Hub." >> $GITHUB_STEP_SUMMARY
