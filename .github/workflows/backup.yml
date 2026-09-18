@@ -50,7 +50,7 @@ jobs:
           echo "SIZE=$(du -h $BACKUP_FILE | cut -f1)" >> $GITHUB_OUTPUT
 
       - name: Upload to GitHub Releases
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: steps.backup.outputs.FILE != ''
         with:
           files: ${{ steps.backup.outputs.FILE }}
