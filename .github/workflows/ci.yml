@@ -42,7 +42,7 @@ jobs:
       - name: Validate .env
         run: |
           if [ -f .env ]; then
-            required_vars="FUTU_ACCOUNT FUTU_PWD_MD5"
+            required_vars="FUTU_ACCOUNT"
             for var in $required_vars; do
               if ! grep -q "^${var}=" .env; then
                 echo "ERROR: Missing required variable $var in .env"

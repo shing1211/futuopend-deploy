@@ -3,7 +3,7 @@
 > Run [FutuOpenD](https://openapi.futunn.com/futu-api-doc/) — the local gateway for Futu's trading API — in Docker.
 
 [![CI](https://github.com/shing1211/futuopend-deploy/actions/workflows/ci.yml/badge.svg)](https://github.com/shing1211/futuopend-deploy/actions/workflows/ci.yml)
-[![FutuOpenD v10.8.6808](https://img.shields.io/badge/FutuOpenD-v10.8.6808-blue)](https://openapi.futunn.com/futu-api-doc/)
+[![FutuOpenD v10.11.7108](https://img.shields.io/badge/FutuOpenD-v10.11.7108-blue)](https://openapi.futunn.com/futu-api-doc/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/shing1211/futuopend)](https://hub.docker.com/r/shing1211/futuopend)
 [![Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-blue)](https://shing1211.github.io/futuopend-deploy/)
@@ -22,21 +22,16 @@ docker pull shing1211/futuopend:latest
 # 2. Clone this repo & configure
 cd futuopend-deploy
 cp .env.example .env
-# edit .env with your Futu account credentials
+# edit .env — set FUTU_ACCOUNT to your Futu ID (no password needed)
 
-# 3. Create config from template
-mkdir -p secrets
-cp FutuOpenD.xml.template secrets/FutuOpenD.xml
-# edit secrets/FutuOpenD.xml with your settings
-
-# 4. (Optional) Add RSA key for trading
+# 3. (Optional) Add RSA key for trading
 # Generate at https://www.futunn.com/en/OpenAPI → Manage Key
 # Save as secrets/rsa_key.txt, then chmod 600
 
-# 5. (Optional) Set platform for ARM (Raspberry Pi)
+# 4. (Optional) Set platform for ARM (Raspberry Pi)
 echo "PLATFORM=linux/arm64" >> .env
 
-# 6. Start
+# 5. Start
 docker compose up -d
 docker compose logs -f
 ```
@@ -136,10 +131,13 @@ docker compose -f docker-compose.yaml -f docker-compose.monitoring.yaml up -d
 Run two accounts side-by-side:
 
 ```bash
+cp .env.example .env-a
+cp .env.example .env-b
+# edit FUTU_ACCOUNT in each .env file
 mkdir -p secrets-a secrets-b
-cp FutuOpenD.xml.template secrets-a/FutuOpenD.xml
-cp FutuOpenD.xml.template secrets-b/FutuOpenD.xml
-# edit each config with different accounts
+# mount RSA keys if trading:
+# cp key_a.txt secrets-a/rsa_key.txt && chmod 600 secrets-a/rsa_key.txt
+# cp key_b.txt secrets-b/rsa_key.txt && chmod 600 secrets-b/rsa_key.txt
 docker compose -f docker-compose.multi.yaml up -d
 ```
 
@@ -159,7 +157,7 @@ Instance `a` uses ports 11113/11114, instance `b` uses 21113/21114.
 
 **Container fails to start with "FutuOpenD not found"**
 - Make sure you have pulled the image: `docker pull shing1211/futuopend:latest`
-- Verify your `secrets/FutuOpenD.xml` is readable: `ls -la secrets/`
+- Verify your `.env` has `FUTU_ACCOUNT` set: `grep FUTU_ACCOUNT .env`
 
 **Health check failing on ARM (Raspberry Pi)**
 - ARM builds use QEMU emulation and may take longer to start. Increase `start_period` in the compose file.

@@ -33,15 +33,11 @@ chmod 600 secrets/rsa_key.txt
 
 And keep it out of version control — the repo's `.gitignore` handles this.
 
-### FutuOpenD.xml — treat it like a secret
+### FutuOpenD.xml — built-in default is usually sufficient
 
-It contains your account ID and credential paths. Lock it down:
+The image ships with a built-in `FutuOpenD.xml` at `/usr/local/bin/FutuOpenD/FutuOpenD.xml`. For most users the default works without modification.
 
-```bash
-chmod 600 secrets/FutuOpenD.xml
-```
-
-In production, pull it from a secrets manager — HashiCorp Vault, AWS Secrets Manager. Don't leave it sitting on a filesystem longer than needed.
+If you need custom settings, mount your own at container startup — but keep sensitive values out of it. v10.10+ remember-login means no password in the config file.
 
 ---
 

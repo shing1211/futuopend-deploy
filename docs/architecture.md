@@ -20,7 +20,7 @@
 │  11114 (WS)    ───►  11112 (FutuOpenD WebSocket)             │
 │                                                              │
 │  Persistent data: /home/futuopend/.com.futunn.FutuOpenD      │
-│  Config file:     /run/secrets/FutuOpenD.xml                 │
+│  Config file:     /usr/local/bin/FutuOpenD/FutuOpenD.xml     │
 │  RSA key:         /run/secrets/rsa_key.txt                   │
 └──────────────────────────┬───────────────────────────────────┘
                            │
@@ -63,7 +63,7 @@ Instance A and Instance B run independently with separate configs, credentials, 
 
 | Path | Description |
 |------|-------------|
-| `secrets/FutuOpenD.xml` | FutuOpenD configuration (credentials, settings) |
+| `FutuOpenD.xml.template` | FutuOpenD configuration template (built into image) |
 | `secrets/rsa_key.txt` | RSA private key for trading (optional) |
 | `futuopend-data` (volume) | Persistent data (market data cache, logs) |
 

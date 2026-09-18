@@ -49,10 +49,10 @@ Make sure you have pulled the image:
 docker pull shing1211/futuopend:latest
 ```
 
-Verify your `secrets/FutuOpenD.xml` is readable:
+Verify your `.env` has `FUTU_ACCOUNT` set:
 
 ```bash
-ls -la secrets/
+grep FUTU_ACCOUNT .env
 ```
 
 **Health check failing on ARM (Raspberry Pi)**

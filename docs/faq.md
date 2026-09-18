@@ -211,10 +211,13 @@ docker run --rm \
 Use `docker-compose.multi.yaml` for two accounts side-by-side:
 
 ```bash
+cp .env.example .env-a
+cp .env.example .env-b
+# set FUTU_ACCOUNT in each .env file
 mkdir -p secrets-a secrets-b
-cp FutuOpenD.xml.template secrets-a/FutuOpenD.xml
-cp FutuOpenD.xml.template secrets-b/FutuOpenD.xml
-# edit both configs with different accounts
+# add RSA keys if trading:
+# cp key_a.txt secrets-a/rsa_key.txt && chmod 600 secrets-a/rsa_key.txt
+# cp key_b.txt secrets-b/rsa_key.txt && chmod 600 secrets-b/rsa_key.txt
 docker compose -f docker-compose.multi.yaml up -d
 ```
 
@@ -255,7 +258,7 @@ If you see memory pressure:
 
 ### How to enable TLS for WebSocket?
 
-Edit `secrets/FutuOpenD.xml` and set the WebSocket TLS options. See [Configuration Reference](configuration.md) for details.
+WebSocket TLS options are set in your `FutuOpenD.xml.template` before container start. See [Configuration Reference](configuration.md) for the `<websocket_private_key>` and `<websocket_cert>` options.
 
 ---
 
@@ -339,7 +342,7 @@ By default, WebSocket pushes on port 11112 inside the container (mapped to 11114
 
 To change the container-internal port:
 
-1. Edit `secrets/FutuOpenD.xml`:
+1. Edit `FutuOpenD.xml.template` before starting the container:
    ```xml
    <ws_push_port>11115</ws_push_port>
    ```
@@ -367,9 +370,9 @@ To change the container-internal port:
    docker compose logs futuopend | tail -100
    ```
 
-2. **Verify your config file is valid XML:**
+2. **Check the container's built-in config:**
    ```bash
-   docker exec futuopend cat /run/secrets/FutuOpenD.xml | head -20
+   docker exec futuopend ls /usr/local/bin/FutuOpenD/
    ```
 
 3. **Check disk space:**
@@ -384,7 +387,7 @@ To change the container-internal port:
    ```
    If memory is being throttled, increase the limit in `docker-compose.yaml`.
 
-5. **Enable debug logging** in `secrets/FutuOpenD.xml` (if available in your version).
+5. **Enable debug logging** by setting `FUTU_LOG_LEVEL=debug` in your `.env` before starting.
 
 6. **Check if the process crashes immediately:**
    ```bash
