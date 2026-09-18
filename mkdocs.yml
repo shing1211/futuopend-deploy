@@ -1,0 +1,73 @@
+site_name: FutuOpenD Deploy
+site_url: https://shing1211.github.io/futuopend-deploy/
+site_description: Run FutuOpenD — the local gateway for Futu's trading API — in Docker
+site_author: Terence Chan
+
+repo_name: shing1211/futuopend-deploy
+repo_url: https://github.com/shing1211/futuopend-deploy
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - content.code.annotate
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Quick Start: quick-start.md
+  - Platform Options: platform-options.md
+  - Image Variants: image-variants.md
+  - Scripts: scripts.md
+  - Multi-Instance: multi-instance.md
+  - Documentation:
+      - API Protocol Reference: api.md
+      - Configuration Reference: configuration.md
+      - Security Hardening Guide: security.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tables
+  - pymdownx.mark
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+plugins:
+  - search:
+      separator: '[\s\-\.]+'
+  - minify:
+      minify_html: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/shing1211/futuopend-deploy

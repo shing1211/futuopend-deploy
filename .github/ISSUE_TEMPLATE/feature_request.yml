@@ -1,0 +1,68 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature] "
+labels: ["enhancement"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature for futuopend-deploy.
+
+        For FutuOpenD API issues or feature requests, please contact [Futu](https://openapi.futunn.com/) directly — this repo only handles the Docker deployment configuration.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: A clear and concise summary of the proposed feature
+      placeholder: A brief description of the feature...
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: |
+        Why is this feature needed? What problem does it solve?
+        Who would benefit from this feature?
+      placeholder: |
+        I want this feature because...
+        This would help...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: |
+        Have you considered any alternative approaches?
+        What are the tradeoffs compared to your proposed solution?
+      placeholder: |
+        Alternative 1: ...
+        Tradeoff: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any mockups, examples, or other supporting material
+      placeholder: |
+        Mockup / example:
+        ...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: This feature is specific to futuopend-deploy (Docker deployment)
+          required: true
+        - label: This is not a FutuOpenD API issue (contact Futu for API issues)
+          required: true

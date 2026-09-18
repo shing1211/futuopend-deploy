@@ -1,0 +1,122 @@
+name: Bug Report
+description: Report something that is not working correctly
+title: "[Bug] "
+labels: ["bug"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report.
+
+  - type: input
+    id: futuopend-version
+    attributes:
+      label: FutuOpenD Version
+      description: The version of FutuOpenD you are running (e.g., v10.8.6808)
+      placeholder: v10.8.6808
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform / Architecture
+      description: The platform and architecture you are deploying on
+      options:
+        - linux/amd64 (x86_64)
+        - linux/arm64 (Raspberry Pi / ARM)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Host Operating System
+      options:
+        - Linux (Ubuntu/Debian)
+        - Linux (Rocky/CentOS/RHEL)
+        - macOS
+        - Windows (Docker Desktop)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: docker-version
+    attributes:
+      label: Docker Version
+      options:
+        - Latest (24.x+)
+        - 23.x
+        - 22.x
+        - Older
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: Describe the bug here...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: |
+        Steps to reproduce the behavior:
+        1. Go to '...'
+        2. Run '...'
+        3. See error '...'
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+      placeholder: Expected behavior...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened
+      placeholder: Actual behavior...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
+      description: |
+        Paste any relevant log output (anonymize sensitive data first).
+        You can run `docker compose logs` or `docker compose logs futuopend` to get this.
+      placeholder: |
+        Paste logs here...
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional Context
+      description: Anything else you want to share (docker-compose.yaml, .env config, etc.)
+      placeholder: |
+        docker-compose.yaml:
+        .env (anonymized):
+        ...
+    validations:
+      required: false

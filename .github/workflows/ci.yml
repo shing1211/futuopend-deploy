@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+          curl -L "https://github.com/docker/compose/releases/download/v${LATEST}/docker-compose-linux-x86_64" -o ~/.docker/bin/docker-compose
+          chmod +x ~/.docker/bin/docker-compose
+          echo "$HOME/.docker/bin" >> $GITHUB_PATH
+
+      - name: Validate docker-compose.yaml
+        run: docker-compose -f docker-compose.yaml config --quiet
+
+      - name: Validate docker-compose.multi.yaml
+        run: docker-compose -f docker-compose.multi.yaml config --quiet
+
+      - name: YAML lint
+        run: |
+          pip install yamllint
+          yamllint -c .yamllint.yaml .
+        continue-on-error: true
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck on scripts
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './scripts'

@@ -33,6 +33,12 @@ services:
       retries: 3
       start_period: 60s
     stop_grace_period: 30s
+    labels:
+      org.opencontainers.image.title: "FutuOpenD Deploy (Instance A)"
+      org.opencontainers.image.description: "Docker Compose configuration for FutuOpenD gateway - Instance A"
+      org.opencontainers.image.source: "https://github.com/shing1211/futuopend-deploy"
+      org.opencontainers.image.version: "1.0.0"
+      org.opencontainers.image.licenses: "Apache-2.0"
 
   futuopend-b:
     image: ${FUTU_IMAGE:-shing1211/futuopend:latest}
@@ -58,6 +64,12 @@ services:
       retries: 3
       start_period: 60s
     stop_grace_period: 30s
+    labels:
+      org.opencontainers.image.title: "FutuOpenD Deploy (Instance B)"
+      org.opencontainers.image.description: "Docker Compose configuration for FutuOpenD gateway - Instance B"
+      org.opencontainers.image.source: "https://github.com/shing1211/futuopend-deploy"
+      org.opencontainers.image.version: "1.0.0"
+      org.opencontainers.image.licenses: "Apache-2.0"
 
 volumes:
   futuopend-data-a:
