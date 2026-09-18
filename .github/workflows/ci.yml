@@ -33,6 +33,27 @@ jobs:
           yamllint -c .yamllint.yaml .
         continue-on-error: true
 
+  env-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate .env
+        run: |
+          if [ -f .env ]; then
+            required_vars="FUTU_ACCOUNT FUTU_PWD_MD5"
+            for var in $required_vars; do
+              if ! grep -q "^${var}=" .env; then
+                echo "ERROR: Missing required variable $var in .env"
+                exit 1
+              fi
+            done
+            echo ".env validation passed"
+          else
+            echo "No .env file found, skipping validation"
+          fi
+
   shellcheck:
     runs-on: ubuntu-latest
     steps:

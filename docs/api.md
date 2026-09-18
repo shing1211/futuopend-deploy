@@ -446,7 +446,7 @@ const quotes = await futu.subscribe([
 
 1. **Check FutuOpenD status:**
    ```bash
-   curl http://127.0.0.1:11111/version
+    curl http://127.0.0.1:11113/version
    ```
 
 2. **Check logs:**

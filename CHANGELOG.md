@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.0.1] - 2026-09-18
+
+### Changed
+
+- **Breaking:** Docker container ports remapped from `11111/11112` to `11113/11114` to avoid conflict with native FutuOpenD installations. Update your trading client to connect to `127.0.0.1:11113` instead.
+
+### Fixed
+
+- Multi-instance deployment port numbers corrected in documentation
+- CI workflow simplified to use Docker Compose v2 built-in (no manual installation)
+- mkdocs build issues fixed (removed broken extension, added missing plugin)
+
+### Added
+
+- Architecture diagram documentation (`docs/architecture.md`)
+- `.yamllint.yaml` configuration for YAML linting in CI
+- Troubleshooting section in documentation
+- Support link and Docker pulls badge in README
+- OCI labels on Docker Compose services
+
 ## [1.0.0] - 2026-09-18
 
 ### Added

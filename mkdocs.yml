@@ -41,6 +41,7 @@ nav:
   - Scripts: scripts.md
   - Multi-Instance: multi-instance.md
   - Documentation:
+      - Architecture: architecture.md
       - API Protocol Reference: api.md
       - Configuration Reference: configuration.md
       - Security Hardening Guide: security.md
