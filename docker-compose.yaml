@@ -39,7 +39,7 @@ services:
       org.opencontainers.image.title: "FutuOpenD Deploy"
       org.opencontainers.image.description: "Docker Compose configuration for FutuOpenD gateway"
       org.opencontainers.image.source: "https://github.com/shing1211/futuopend-deploy"
-      org.opencontainers.image.version: "1.0.2"
+      org.opencontainers.image.version: "1.0.4"
       org.opencontainers.image.licenses: "Apache-2.0"
     networks:
       - futuopend-net

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-09-18
+
+### Added
+
+- 8 new FAQ entries covering Windows/WSL2, version checking, Home Assistant integration,
+  remote access security, supported markets, WebSocket port configuration, crash loop debugging,
+  and native-to-Docker migration
+- 7 new Grafana dashboard panels: Uptime, Memory Working Set, Disk I/O Read/Write,
+  CPU Throttling, Process Count, Data Volume Size
+- Prometheus alerting rules: FutuOpenDCrashLoop, FutuOpenDMemoryHigh, FutuOpenDCPUThrottling,
+  FutuOpenDDown, FutuOpenDNetworkErrors
+- Grafana alerting contact point documentation in CONTRIBUTING.md
+- Monitoring stack alert rules loaded by Prometheus
+
+### Fixed
+
+- Monitoring stack ports remapped to uncommon ranges (29090/29091/23000) to avoid conflicts
+- cAdvisor updated from v0.49.0 to v0.51.0 (v0.49.0 no longer available at gcr.io)
+
+### Changed
+
+- README now documents all 3 compose file variants with use cases and descriptions
+- Grafana dashboard expanded from 6 to 13 panels (version bump to 2)
+- Prometheus configured to load alerting rules via `rule_files`
+
 ## [1.0.3] - 2026-09-18
 
 ### Added

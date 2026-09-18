@@ -49,7 +49,7 @@ services:
       org.opencontainers.image.title: "FutuOpenD Deploy (Instance A)"
       org.opencontainers.image.description: "Docker Compose configuration for FutuOpenD gateway - Instance A"
       org.opencontainers.image.source: "https://github.com/shing1211/futuopend-deploy"
-      org.opencontainers.image.version: "1.0.2"
+      org.opencontainers.image.version: "1.0.4"
       org.opencontainers.image.licenses: "Apache-2.0"
     networks:
       - futuopend-net-a
@@ -94,7 +94,7 @@ services:
       org.opencontainers.image.title: "FutuOpenD Deploy (Instance B)"
       org.opencontainers.image.description: "Docker Compose configuration for FutuOpenD gateway - Instance B"
       org.opencontainers.image.source: "https://github.com/shing1211/futuopend-deploy"
-      org.opencontainers.image.version: "1.0.2"
+      org.opencontainers.image.version: "1.0.4"
       org.opencontainers.image.licenses: "Apache-2.0"
     networks:
       - futuopend-net-b

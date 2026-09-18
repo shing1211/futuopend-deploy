@@ -35,6 +35,16 @@ docker compose logs -f futuopend
 docker compose logs --tail 100 futuopend
 ```
 
+### Can I run on Windows without WSL2?
+
+Docker Desktop on Windows requires either **WSL2** (recommended) or the **Hyper-V backend**.
+
+- **WSL2** is recommended — install from Windows Features or run `wsl --install` in PowerShell as admin
+- **Hyper-V** requires Windows Pro/Enterprise and must be enabled in BIOS
+- **Docker Desktop without WSL2 or Hyper-V** is not supported for Linux containers on Windows
+
+Check Docker Desktop settings → General to see which backend is active.
+
 ---
 
 ## Configuration
@@ -277,3 +287,165 @@ Edit `secrets/FutuOpenD.xml` and set the WebSocket TLS options. See [Configurati
 2. Generate new MD5 hash
 3. Update `.env` or `secrets/FutuOpenD.xml`
 4. Restart the container: `docker compose restart futuopend`
+
+### How to expose FutuOpenD over the internet?
+
+> **WARNING:** Exposing FutuOpenD directly to the internet without protection is dangerous — your trading account could be compromised.
+
+**Recommended approach — VPN:**
+
+Use a VPN like [Tailscale](https://tailscale.com/) or [WireGuard](https://www.wireguard.com/) to create a private network. Your trading client connects through the VPN to the Docker host.
+
+**Alternative — SSH tunnel:**
+
+```bash
+# On your trading client machine
+ssh -L 11113:localhost:11113 user@your-docker-host
+```
+
+Then connect your trading client to `127.0.0.1:11113`.
+
+**Do NOT:**
+- Open port 11113/11114 directly in your firewall to the internet
+- Use plain HTTP without VPN (credentials are transmitted insecurely)
+- Forward ports via router NAT without authentication
+
+### What markets and countries are supported?
+
+FutuOpenD supports multiple markets depending on your Futu account type:
+
+| Market | Code | Supported |
+|--------|------|-----------|
+| Hong Kong | HK | ✅ |
+| United States | US | ✅ |
+| China A-Share | CN | ✅ |
+| Singapore | SG | ✅ |
+| Australia | AU | ✅ |
+| Japan | JP | ✅ |
+
+Supported markets depend on your Futu account tier and regulatory approval. Check [Futu OpenAPI](https://openapi.futunn.com/) for the latest supported list.
+
+---
+
+## Configuration
+
+### How do I check FutuOpenD version inside the container?
+
+```bash
+# List FutuOpenD directory contents
+docker exec futuopend ls /FutuOpenD/
+
+# Check version file if present
+docker exec futuopend cat /FutuOpenD/version.txt
+
+# Or check the binary version
+docker exec futuopend /FutuOpenD/FutuOpenD --version
+```
+
+### How do I change the WebSocket push port?
+
+By default, WebSocket pushes on port 11112 inside the container (mapped to 11114 on host).
+
+To change the container-internal port:
+
+1. Edit `secrets/FutuOpenD.xml`:
+   ```xml
+   <ws_push_port>11115</ws_push_port>
+   ```
+
+2. Update the port mapping in `docker-compose.yaml`:
+   ```yaml
+   ports:
+     - "11113:11111"
+     - "11114:11115"  # change this
+   ```
+
+3. Restart:
+   ```bash
+   docker compose restart futuopend
+   ```
+
+---
+
+## Troubleshooting
+
+### Container keeps restarting — how to debug?
+
+1. **Check logs for errors:**
+   ```bash
+   docker compose logs futuopend | tail -100
+   ```
+
+2. **Verify your config file is valid XML:**
+   ```bash
+   docker exec futuopend cat /run/secrets/FutuOpenD.xml | head -20
+   ```
+
+3. **Check disk space:**
+   ```bash
+   docker system df
+   ```
+   If the data volume is full, FutuOpenD may fail to start.
+
+4. **Check memory limits:**
+   ```bash
+   docker stats futuopend --no-stream
+   ```
+   If memory is being throttled, increase the limit in `docker-compose.yaml`.
+
+5. **Enable debug logging** in `secrets/FutuOpenD.xml` (if available in your version).
+
+6. **Check if the process crashes immediately:**
+   ```bash
+   docker compose logs --tail 200 futuopend | grep -i "crash\|segfault\|signal"
+   ```
+
+### Can I use this with Home Assistant?
+
+Yes. FutuOpenD acts as a local API server. Configure Home Assistant to connect to `127.0.0.1:11113` as the host.
+
+In Home Assistant, you would typically add Futu as a custom integration or use a REST sensor with the FutuOpenD API. Since this varies by Home Assistant version and setup, refer to the [FutuOpenD API documentation](api.md) for protocol details.
+
+### How do I migrate from native FutuOpenD to Docker?
+
+1. **Backup your native FutuOpenD data** (if any):
+   ```bash
+   # Find the native data directory
+   # Default: ~/.com.futunn.FutuOpenD/
+   cp -r ~/.com.futunn.FutuOpenD ~/backup-futuopend-native/
+   ```
+
+2. **Stop the native FutuOpenD service:**
+   ```bash
+   # Windows: stop the FutuOpenD service via Services app
+   # Linux: sudo systemctl stop futuopend
+   ```
+
+3. **Configure Docker** with the same credentials:
+   - Copy your `FutuOpenD.xml` to `secrets/FutuOpenD.xml`
+   - Update the login account and MD5 password if needed
+
+4. **Start Docker container:**
+   ```bash
+   docker compose up -d
+   ```
+
+5. **Update your trading client** to connect to `127.0.0.1:11113` instead of the native port (likely 11111).
+
+6. **Verify connection:**
+   ```bash
+   curl http://localhost:11113/version
+   ```
+
+7. **Import native data** (if applicable):
+   ```bash
+   docker compose stop
+   # Copy backed up data into the volume
+   docker run --rm -v futuopend-data:/data -v ~/backup-futuopend-native:/input alpine \
+     sh -c "cp -r /input/* /data/"
+   docker compose start
+   ```
+
+---
+
+## Operations

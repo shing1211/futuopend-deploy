@@ -101,6 +101,18 @@ Before opening a PR, verify:
 - [ ] README.md reflects any new features or changes
 - [ ] Documentation updated if changing configuration options
 
+## Docker Hub Synchronization
+
+If your changes affect installation instructions, quick start, or Docker-specific usage,
+update the [Docker Hub repository description](https://hub.docker.com/r/shing1211/futuopend)
+to keep it in sync with README.md.
+
+To update Docker Hub manually:
+1. Go to https://hub.docker.com/r/shing1211/futuopend/settings
+2. Update the description field to match the README content
+
+If Docker Hub's linked repository feature is enabled, the description may sync automatically.
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under the Apache License 2.0.

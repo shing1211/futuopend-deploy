@@ -1,0 +1,48 @@
+groups:
+  - name: futuopend_alerts
+    interval: 30s
+    rules:
+      - alert: FutuOpenDCrashLoop
+        expr: increase(container_restart_count{name=~"futuopend.*"}[10m]) > 3
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FutuOpenD container restarting repeatedly"
+          description: "{{ $labels.name }} has restarted {{ $value }} times in the last 10 minutes."
+
+      - alert: FutuOpenDMemoryHigh
+        expr: container_memory_usage_bytes{name=~"futuopend.*"} / container_spec_memory_limit_bytes{name=~"futuopend.*"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "FutuOpenD memory usage high"
+          description: "{{ $labels.name }} memory usage is above 85% of limit ({{ $value | humanizePercentage }})."
+
+      - alert: FutuOpenDCPUThrottling
+        expr: rate(container_cpu_cfs_throttled_periods_total{name=~"futuopend.*"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "FutuOpenD CPU being throttled"
+          description: "{{ $labels.name }} is experiencing CPU throttling ({{ $value }} throttled periods/s)."
+
+      - alert: FutuOpenDDown
+        expr: container_start_time_seconds{name=~"futuopend.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FutuOpenD container is down"
+          description: "{{ $labels.name }} has been down for more than 1 minute."
+
+      - alert: FutuOpenDNetworkErrors
+        expr: rate(container_network_receive_errors_total{name=~"futuopend.*"}[5m]) + rate(container_network_transmit_errors_total{name=~"futuopend.*"}[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "FutuOpenD network errors detected"
+          description: "{{ $labels.name }} has network errors ({{ $value }} errors/s)."

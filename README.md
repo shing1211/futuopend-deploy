@@ -85,12 +85,34 @@ emulation (~2-5x slower than native). For latency-sensitive trading on Pi, consi
 [box64](https://github.com/ptitSeb/box64) — install it on the host and the container
 uses it automatically.
 
+## Compose Variants
+
+Choose the file that matches your use case:
+
+| File | Use Case | Command |
+|------|----------|---------|
+| `docker-compose.yaml` | Single futuopend instance (default) | `docker compose up -d` |
+| `docker-compose.multi.yaml` | High Availability — two instances with automatic failover | `docker compose -f docker-compose.multi.yaml up -d` |
+| `docker-compose.monitoring.yaml` | Monitoring add-on — Prometheus + Grafana + cAdvisor | `docker compose -f docker-compose.monitoring.yaml up -d` |
+
+**Note:** The multi-instance deployment runs two independent futuopend containers
+(ports 11113 and 21113) for HA scenarios. Both instances share the same Docker host
+but have separate configs, volumes, and networks.
+
+**Combine futuopend + monitoring:**
+```bash
+docker compose -f docker-compose.yaml -f docker-compose.monitoring.yaml up -d
+```
+
+---
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.yaml` | Docker Compose deployment |
-| `docker-compose.multi.yaml` | Multi-instance deployment (two accounts) |
+| `docker-compose.yaml` | Single-instance deployment (default) |
+| `docker-compose.multi.yaml` | High Availability deployment (two instances) |
+| `docker-compose.monitoring.yaml` | Monitoring stack (Prometheus + Grafana + cAdvisor) |
 | `.env.example` | Runtime env vars template |
 | `FutuOpenD.xml.template` | Config template with env-var substitution |
 | `secrets/` | Your config and keys (gitignored) |
