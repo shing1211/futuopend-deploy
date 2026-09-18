@@ -1,0 +1,108 @@
+name: Nightly Backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: 'Days to keep backups'
+        required: false
+        default: '7'
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  RETENTION_DAYS: ${{ inputs.retention_days || '7' }}
+  BACKUP_DATE: ${{ github.event.inputs.retention_days != '' && 'false' || 'true' }}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set backup date
+        id: date
+        run: echo "DATE=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+
+      - name: Validate compose file
+        run: docker compose -f docker-compose.yaml config --quiet
+
+      - name: Ensure data volume exists
+        run: |
+          docker volume create futuopend-data --driver local || true
+
+      - name: Create backup
+        id: backup
+        run: |
+          BACKUP_FILE="futuopend-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+          docker run --rm \
+            -v futuopend-data:/data:ro \
+            -v $(pwd):/output \
+            alpine:latest \
+            sh -c "cd /data && tar czf /output/$BACKUP_FILE ."
+          echo "FILE=$BACKUP_FILE" >> $GITHUB_OUTPUT
+          echo "SIZE=$(du -h $BACKUP_FILE | cut -f1)" >> $GITHUB_OUTPUT
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: steps.backup.outputs.FILE != ''
+        with:
+          files: ${{ steps.backup.outputs.FILE }}
+          tag_name: nightly-backup-${{ steps.date.outputs.DATE }}
+          name: Nightly Backup ${{ steps.date.outputs.DATE }}
+          body: |
+            Automated nightly backup of futuopend-deploy data volume.
+
+            **Backup Date:** ${{ steps.date.outputs.DATE }}
+            **Size:** ${{ steps.backup.outputs.SIZE }}
+
+            ## Restore Instructions
+
+            ```bash
+            # Stop the container
+            docker compose down
+
+            # Restore from backup
+            docker run --rm \
+              -v futuopend-data:/data \
+              -v $(pwd):/input \
+              alpine:latest \
+              sh -c "tar xzf /input/${{ steps.backup.outputs.FILE }} -C /data"
+
+            # Restart
+            docker compose up -d
+            ```
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    needs: backup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup old releases
+        run: |
+          RETENTION_DAYS=${{ env.RETENTION_DAYS }}
+          CUTOFF_DATE=$(date -d "$RETENTION_DAYS days ago" +%Y-%m-%d)
+
+          echo "Cleaning up nightly backups older than $CUTOFF_DATE..."
+
+          gh release list --limit 100 --json tagName,createdAt,isDraft,isPrerelease -q '.[] | select(.isPrerelease == true and .tagName | startswith("nightly-backup-"))' | while read release; do
+            TAG=$(echo $release | jq -r '.tagName')
+            CREATED=$(echo $release | jq -r '.createdAt' | cut -d'T' -f1)
+
+            if [ "$CREATED" \< "$CUTOFF_DATE" ]; then
+              echo "Deleting $TAG (created $CREATED)"
+              gh release delete "$TAG" --yes || true
+              git push --delete origin "$TAG" || true
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-09-18
+
+### Added
+
+- Monitoring stack (`docker-compose.monitoring.yaml`) with Prometheus + Grafana + cAdvisor
+- Pre-built Grafana dashboard for FutuOpenD container health
+- FAQ documentation page (`docs/faq.md`) covering common questions
+- Docs preview workflow for PRs
+- Nightly backup automation workflow (GitHub Actions)
+- Prometheus configuration for container metrics scraping
+
+### Changed
+
+- FAQ added to documentation navigation
+
 ## [1.0.2] - 2026-09-18
 
 ### Security
