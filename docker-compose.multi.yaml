@@ -20,12 +20,12 @@ services:
     environment:
       - TZ=${TZ:-Asia/Hong_Kong}
     volumes:
-      - ./secrets-a/FutuOpenD.xml:/run/secrets/FutuOpenD.xml:ro
       - ./secrets-a/rsa_key.txt:/run/secrets/rsa_key.txt:ro
       - futuopend-data-a:/home/futuopend/.com.futunn.FutuOpenD
     ports:
       - "11113:11111"
       - "11114:11112"
+      - "22222:22222"
     healthcheck:
       test: ["CMD", "pgrep", "-x", "FutuOpenD"]
       interval: 30s
@@ -65,12 +65,12 @@ services:
     environment:
       - TZ=${TZ:-Asia/Hong_Kong}
     volumes:
-      - ./secrets-b/FutuOpenD.xml:/run/secrets/FutuOpenD.xml:ro
       - ./secrets-b/rsa_key.txt:/run/secrets/rsa_key.txt:ro
       - futuopend-data-b:/home/futuopend/.com.futunn.FutuOpenD
     ports:
       - "21113:11111"
       - "21114:11112"
+      - "22222:22222"
     healthcheck:
       test: ["CMD", "pgrep", "-x", "FutuOpenD"]
       interval: 30s

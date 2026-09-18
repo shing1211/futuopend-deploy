@@ -51,44 +51,29 @@ Check Docker Desktop settings → General to see which backend is active.
 
 ### How do I set up my Futu account credentials?
 
-**Option A: Via `.env` file (recommended)**
+As of v10.10+, FutuOpenD uses remember-login. No password needed in config.
 
-1. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. Edit `.env` and set:
-   ```bash
-   FUTU_ACCOUNT=your_email_or_phone
-   FUTU_PWD_MD5=your_md5_hashed_password
-   ```
-
-3. The `FutuOpenD.xml.template` automatically substitutes `${FUTU_ACCOUNT}` and `${FUTU_PWD_MD5}` from your `.env`.
-
-**Option B: Directly editing `FutuOpenD.xml`**
-
-1. Copy the template: `cp FutuOpenD.xml.template secrets/FutuOpenD.xml`
-2. Edit `secrets/FutuOpenD.xml` directly:
-   ```xml
-   <login_account>your_email_or_phone</login_account>
-   <login_pwd_md5>your_md5_hashed_password</login_pwd_md5>
-   ```
-
-### How do I generate an MD5 hash for my password?
+**In `.env`, set only your account ID:**
 
 ```bash
-# Linux
-echo -n "your_password" | md5sum | cut -d' ' -f1
-
-# macOS
-md5 -s "your_password"
-
-# PowerShell
-[System.Security.Cryptography.MD5]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes("your_password")) | ForEach-Object { $_.ToString("x2") } | Join-String
+FUTU_ACCOUNT=your_futu_id_or_email_or_phone
 ```
 
-The result should be a 32-character hex string.
+On first run, FutuOpenD enters interactive login mode. After successful login, credentials are cached in the Docker data volume and reused automatically on every restart.
+
+### What is remember-login and how does it work?
+
+FutuOpenD v10.10+ caches your login credentials locally after the first successful interactive login. On subsequent runs, it reuses the cached session automatically via `--login_by_remember=1`.
+
+**Benefits:**
+- No password in config files or environment variables
+- One-time interactive login — subsequent restarts are fully automatic
+- Credentials stored locally in the Docker data volume
+
+**When re-verification is needed:**
+- New IP or network (Futu detects new device)
+- Futu resets device whitelist server-side
+- Docker data volume was deleted
 
 ### How do I set up RSA key for trading?
 
@@ -176,11 +161,13 @@ The health check uses `pgrep -x FutuOpenD` to verify the process is running.
 
 3. Ensure the key format is correct (PEM format, starts with `-----BEGIN RSA PRIVATE KEY-----`)
 
-### Invalid MD5 password hash
+### Login keeps asking for verification code
 
-- Ensure the hash is exactly 32 hex characters with no spaces, newlines, or prefixes
-- The hash is case-insensitive
-- On Windows, ensure there are no hidden characters (use a plain text editor)
+This is normal behavior when Futu's server invalidates the cached device session:
+
+- **What changed in v10.10+:** Remember-login caches credentials after first login. If Futu detects a new device/IP, it requires fresh verification.
+- **Fix:** Submit the verification code via Telnet (see [First-Time Login](../configuration.md#first-time-login-phone-verification-in-docker))
+- **To prevent frequent re-verification:** Keep your Docker data volume (`futuopend-data`) — deleting it forces a fresh login
 
 ---
 
@@ -276,17 +263,21 @@ Edit `secrets/FutuOpenD.xml` and set the WebSocket TLS options. See [Configurati
 
 ### Is my password safe?
 
-- Passwords are stored as MD5 hashes (one-way, not reversible)
+- As of v10.10+, no password stored in config — remember-login caches credentials locally
+- The Docker data volume (`futuopend-data`) contains the cached session — treat it as sensitive
 - Config files are gitignored and never committed
 - Inside the container, FutuOpenD runs as a non-root user
 - See [Security Hardening Guide](security.md) for full security recommendations
 
 ### How do I rotate my credentials?
 
-1. Update your password at [Futu OpenAPI](https://www.futunn.com/en/OpenAPI)
-2. Generate new MD5 hash
-3. Update `.env` or `secrets/FutuOpenD.xml`
-4. Restart the container: `docker compose restart futuopend`
+To force a fresh login after changing your Futu password:
+
+1. Delete the Docker data volume: `docker compose down -v` (this removes the cached session)
+2. Restart the container: `docker compose up -d`
+3. Complete the interactive login again (submit verification code if prompted)
+
+The new password is cached automatically on next successful login.
 
 ### How to expose FutuOpenD over the internet?
 
@@ -421,9 +412,10 @@ In Home Assistant, you would typically add Futu as a custom integration or use a
    # Linux: sudo systemctl stop futuopend
    ```
 
-3. **Configure Docker** with the same credentials:
-   - Copy your `FutuOpenD.xml` to `secrets/FutuOpenD.xml`
-   - Update the login account and MD5 password if needed
+3. **Configure Docker:**
+   - Copy `.env.example` to `.env` and set only `FUTU_ACCOUNT=your_futu_id`
+   - No password needed — v10.10+ uses remember-login
+   - Mount your RSA key at `secrets/rsa_key.txt` (required for trading)
 
 4. **Start Docker container:**
    ```bash

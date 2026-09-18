@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
+  <!--
   FutuOpenD.xml — Official Configuration Template
   =================================================
-  This file is derived from the official FutuOpenD v10.8.6808 release tarball
+  This file is derived from the official FutuOpenD v10.11.7108 release tarball
   published by Futu Securities (富途证券).
 
   FutuOpenD is proprietary software owned by Futu Network Technology Limited.
@@ -10,7 +10,10 @@
   Docker packaging project (shing1211/futuopend), which is an unofficial
   community project not affiliated with or endorsed by Futu Securities.
 
-  Usage: copy this to your secrets directory and fill in your values.
+  NOTE: As of v10.10+, FutuOpenD no longer reads login credentials from this
+  file. Set FUTU_ACCOUNT in your environment — the entrypoint.sh passes
+  --login_account and --login_by_remember=1 via CLI arguments automatically.
+
   All values support ${VAR_NAME} environment variable substitution.
 
   Config reference: https://github.com/shing1211/futuopend-deploy/blob/main/docs/configuration.md
@@ -24,18 +27,6 @@
 
   <!-- api_port           : TCP API listening port. Default: 11111 -->
   <api_port>${FUTU_API_PORT:-11111}</api_port>
-
-  <!-- login_account     : Futu account ID, phone number, or email.
-                           Phone format: +86 13800138000 -->
-  <login_account>${FUTU_ACCOUNT}</login_account>
-
-  <!-- login_pwd_md5     : Login password as 32-char MD5 hex.
-                           Either login_pwd_md5 OR login_pwd is required. -->
-  <login_pwd_md5>${FUTU_PWD_MD5}</login_pwd_md5>
-
-  <!-- login_pwd         : Plain-text login password (login_pwd_md5 takes precedence).
-                           WARNING: do not use plain-text in production. -->
-  <!-- <login_pwd>123456</login_pwd> -->
 
   <!-- lang              : Language. Options: en (English), chs (Simplified Chinese) -->
   <lang>${FUTU_LANG:-en}</lang>

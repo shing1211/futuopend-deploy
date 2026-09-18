@@ -8,7 +8,7 @@ Your trading credentials live inside this container. This guide shows you how to
 
 ## The Golden Rules
 
-1. **Never hardcode secrets.** Use MD5 for passwords, mount keys as files, pass nothing in plaintext.
+1. **Never hardcode secrets.** As of v10.10+, no password in config — remember-login handles credentials. Mount keys as files.
 2. **Least privilege.** Run as non-root, drop capabilities, lock down the filesystem.
 3. **Network is enemy territory.** TLS on everything that crosses a wire. Firewall everything else.
 4. **Rotate.** Keys wear out. Change them periodically via the [Futu OpenAPI dashboard](https://www.futunn.com/en/OpenAPI).
@@ -17,24 +17,11 @@ Your trading credentials live inside this container. This guide shows you how to
 
 ## Credential Handling
 
-### Your password — hash it, never store it plaintext
+### Remember-login (v10.10+)
 
-The `<login_pwd_md5>` tag takes a one-way MD5 hash. Your actual password never touches the disk.
+FutuOpenD v10.10+ uses remember-login — credentials are cached after the first interactive login and reused automatically. Your `FUTU_ACCOUNT` environment variable identifies the account; no password in config.
 
-Generate it:
-
-```bash
-# Linux
-echo -n "your_password" | md5sum | cut -d' ' -f1
-
-# macOS
-echo -n "your_password" | md5 -r
-
-# Python (works everywhere)
-python3 -c "import hashlib; print(hashlib.md5(b'your_password').hexdigest())"
-```
-
-The `-n` suppresses the trailing newline. Omit it and the hash is wrong.
+> **Protect the data volume.** The Docker volume `futuopend-data` contains the cached session. If compromised, an attacker could potentially access your trading account. Treat the volume as sensitive.
 
 ### Your RSA private key — chmod 600, never commit it
 
@@ -185,14 +172,14 @@ Pin the FutuOpenD version in production. Auto-upgrades at the wrong time can bre
 Run through this before going live:
 
 - [ ] RSA private key has no password and `chmod 600`
-- [ ] `FutuOpenD.xml` is not committed to version control
+- [ ] `FutuOpenD.xml` does not contain hardcoded credentials (v10.10+ uses remember-login)
 - [ ] Remote access uses TLS (both `websocket_private_key` and `websocket_cert` set)
 - [ ] Firewall restricts port `11111` to known client IPs
 - [ ] Container runs with `read_only: true`, `cap_drop: ALL`, and `no-new-privileges: true`
 - [ ] Logs are forwarded to a central system and reviewed for auth failures
 - [ ] FutuOpenD version is pinned (not `latest`)
 - [ ] Separate keys used for dev and production
-- [ ] Password hash is not reused across environments
+- [ ] Docker data volume (`futuopend-data`) is backed up and secured
 
 ---
 

@@ -30,18 +30,27 @@ cd futuopend-deploy
 cp .env.example .env
 ```
 
-Edit `.env` with your Futu account credentials.
+Edit `.env` and set only your Futu account ID:
 
-### 3. Create config from template
+```bash
+FUTU_ACCOUNT=your_futu_id_or_email
+```
+
+No password needed — v10.10+ uses remember-login.
+
+### 3. Create secrets directory and add RSA key (required for trading)
 
 ```bash
 mkdir -p secrets
-cp FutuOpenD.xml.template secrets/FutuOpenD.xml
 ```
 
-Edit `secrets/FutuOpenD.xml` with your settings. The template supports environment variable substitution.
+Generate an RSA key at [Futu OpenAPI](https://www.futunn.com/en/OpenAPI) → Manage Key, save the private key as `secrets/rsa_key.txt`, then:
 
-### 4. (Optional) Add RSA key for trading
+```bash
+chmod 600 secrets/rsa_key.txt
+```
+
+### 4. Start
 
 Generate an RSA key at [Futu OpenAPI](https://www.futunn.com/en/OpenAPI) → Manage Key, save as `secrets/rsa_key.txt`, then:
 

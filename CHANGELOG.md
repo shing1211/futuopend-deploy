@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-09-18
+
+### Changed
+
+- **Breaking:** FutuOpenD v10.10+ removed `<login_account>` and `<login_pwd_md5>` from `FutuOpenD.xml`. Credentials are now passed via `--login_account` CLI argument with `--login_by_remember=1`. Only `FUTU_ACCOUNT` env var is required (no password).
+- `FutuOpenD.xml.template`: removed deprecated `<login_account>` and `<login_pwd_md5>` fields
+- `.env.example`: removed `FUTU_PWD_MD5` variable and MD5 generation instructions
+- `docker-compose.yaml` and `docker-compose.multi.yaml`: removed `secrets/FutuOpenD.xml` volume mount, added `22222:22222` port (Telnet)
+- Dockerfiles: added `EXPOSE 22222` for Telnet interface
+- `entrypoint.sh`: now passes `--login_account="${FUTU_ACCOUNT}" --login_by_remember=1` to FutuOpenD
+
+### Added
+
+- Telnet port 22222 now exposed in all compose files for phone/CAPTCHA verification
+- Documentation: updated phone verification guide with remember-login flow, CAPTCH support, and troubleshooting
+
+### Deprecated
+
+- `FUTU_PWD_MD5` environment variable — no longer used
+
 ## [1.0.5] - 2026-09-18
 
 ### Added

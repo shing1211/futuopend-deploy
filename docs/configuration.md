@@ -1,10 +1,22 @@
 # FutuOpenD.xml Configuration Reference
 
-Every tag FutuOpenD v10.8.6808 understands, documented with examples. Start with the `FutuOpenD.xml.template` in the repo root — it's pre-wired with env-var substitution and sensible defaults.
+Every tag FutuOpenD v10.11.7108 understands, documented with examples. Start with the `FutuOpenD.xml.template` in the repo root — it's pre-wired with env-var substitution and sensible defaults.
 
 > **Disclaimer:** This is an unofficial community packaging. Not affiliated with, endorsed by, or supported by Futu Securities or moomoo.
 
 ---
+
+## New in v10.10+ — Login Changed
+
+**Breaking change:** As of v10.10.7008, FutuOpenD no longer reads `<login_account>` or `<login_pwd_md5>` from `FutuOpenD.xml`. Credentials must now be passed via CLI arguments:
+
+```bash
+FutuOpenD --login_account=your_account_id --login_by_remember=1
+```
+
+The `futuopend` Docker image handles this automatically — set `FUTU_ACCOUNT` in your environment and the entrypoint passes the correct CLI args. No credentials need to be in `FutuOpenD.xml` any more.
+
+On first run, FutuOpenD enters interactive login mode, caches your credentials locally, and on subsequent runs logs in automatically via remember-login.
 
 ## New in v10.8.6808
 
@@ -14,17 +26,6 @@ Every tag FutuOpenD v10.8.6808 understands, documented with examples. Start with
 - **Comprehensive Options Analysis** — IV/HV, Put/Call Ratio, 0DTE Options, Upcoming Earnings, Seller Dashboard
 - **Market Fundamentals API** — Institutional Tracker, Macroeconomic Data, Dividend & Earnings Calendars, Industry Chain, Market Movers, Fed Rate Projections
 - Config schema unchanged — `FutuOpenD.xml` byte-identical to 10.7.6708
-
-## New in v10.7.6708
-
-- No public release notes available — `FutuOpenD.xml` config schema is **byte-identical to 10.6.6608**
-- 5 new vendored libraries shipped in the binary (`libcrypto.so.3`, `libcurl.so.4`, `libf3cnet.so`, `libprotobuf.so.32`, `libssl.so.3`); new APIs are server-side, no XML changes required
-
-## New in v10.6.6608
-
-- **Conditional Stock Screening API** — server-side stock screening with custom filters
-- **Fundamental Data API** — financial statements, analyst ratings, dividend history, shareholder data
-- **moomoo Australia Simulated Trading Account** — AU paper trading support
 
 ---
 
@@ -36,7 +37,7 @@ Every tag FutuOpenD v10.8.6808 understands, documented with examples. Start with
 
 ## Minimal Working Config
 
-This is everything you need for a functional, authenticated session:
+This is everything you need for a functional session (credentials are handled automatically by the entrypoint):
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -45,9 +46,7 @@ This is everything you need for a functional, authenticated session:
   <ip>127.0.0.1</ip>
   <api_port>11111</api_port>
 
-  <!-- Account -->
-  <login_account>your_account_id</login_account>
-  <login_pwd_md5>YOUR_32CHAR_MD5_HASH_HERE</login_pwd_md5>
+  <!-- RSA key — required for trading or remote access -->
   <rsa_private_key>/run/secrets/rsa_key.txt</rsa_private_key>
 
   <!-- Behaviour -->
@@ -64,48 +63,25 @@ Add whatever you need from the sections below. Everything else is optional.
 
 ## Account & Authentication
 
-### `<login_account>`
+> **v10.10+ note:** `<login_account>` and `<login_pwd_md5>` are no longer read from `FutuOpenD.xml`. Set `FUTU_ACCOUNT` as an environment variable — the entrypoint passes your credentials via CLI arguments automatically.
 
-Your Futu account identifier. Three formats work:
+### Remember-Login (v10.10+)
 
-```xml
-<!-- Futu account ID (牛牛号) — find it in the app under Settings -->
-<login_account>12345678</login_account>
+FutuOpenD v10.10+ uses a remember-login mechanism:
 
-<!-- Phone number with country code -->
-<login_account>+86 13800138000</login_account>
+1. **First run:** OpenD enters interactive login mode, prompts for account and password, caches credentials locally
+2. **Subsequent runs:** OpenD logs in automatically using the cached credentials
 
-<!-- Email address -->
-<login_account>you@example.com</login_account>
-```
+This means you only enter your password once — after the first successful login, the Docker data volume persists the session and FutuOpenD reuses it on every restart.
 
-### `<login_pwd_md5>` — strongly recommended
+**Your `FUTU_ACCOUNT` environment variable** tells FutuOpenD which account to log in with. No password needed in config.
 
-Your password as a **32-character lowercase MD5 hex string**. Use this instead of plaintext — your actual password never touches the disk.
+> **Important:** The Docker data volume (`futuopend-data`) stores the cached session. **Do not delete it** — otherwise FutuOpenD will require interactive login again on next start.
 
-Generate it:
-
-```bash
-# Linux
-echo -n "your_password" | md5sum | cut -d' ' -f1
-
-# macOS
-echo -n "your_password" | md5 -r
-
-# Python — works anywhere
-python3 -c "import hashlib; print(hashlib.md5(b'your_password').hexdigest())"
-```
-
-> The `-n` is not a typo. It suppresses the trailing newline. Without it, the hash is wrong.
-
-### `<login_pwd>` — for local testing only
-
-Plaintext fallback when `<login_pwd_md5>` is absent. **Never use this in production.**
-
-```xml
-<!-- Seriously, don't ship this -->
-<login_pwd>hunter2</login_pwd>
-```
+When re-verification is triggered:
+- New IP or device detected by Futu's servers
+- Futu invalidates the device whitelist (server-side, hours to days)
+- You will need to submit a new SMS/CAPTCHA code via Telnet port 22222
 
 ### `<rsa_private_key>`
 
@@ -328,8 +304,6 @@ A triggered DT Call requires depositing the full call amount to clear.
 FutuOpenD resolves `${VAR_NAME}` patterns at startup. Docker injects env vars automatically — no config file rewrites needed.
 
 ```xml
-<login_account>${FUTU_ACCOUNT}</login_account>
-<login_pwd_md5>${FUTU_PWD_MD5}</login_pwd_md5>
 <rsa_private_key>${FUTU_RSA_KEY}</rsa_private_key>
 <ip>${FUTU_IP:-127.0.0.1}</ip>
 <log_level>${FUTU_LOG_LEVEL:-info}</log_level>
@@ -344,7 +318,6 @@ services:
   futuopend:
     environment:
       FUTU_ACCOUNT: "12345678"
-      FUTU_PWD_MD5: "aaaa0000aaaa0000aaaa0000aaaa0000"
       FUTU_RSA_KEY: "/run/secrets/rsa_key.txt"
       FUTU_IP: "0.0.0.0"
       FUTU_LOG_LEVEL: "debug"
@@ -355,19 +328,17 @@ services:
 ```bash
 docker run \
   -e FUTU_ACCOUNT=12345678 \
-  -e FUTU_PWD_MD5="$(echo -n 'mypassword' | md5sum | cut -d' ' -f1)" \
   -e FUTU_RSA_KEY=/run/secrets/rsa_key.txt \
   shing1211/futuopend:latest
 ```
 
-> **Note:** FutuOpenD does the substitution, not Docker. Env vars must be present in the container's environment — mounting a file isn't enough.
+> **Note:** `FUTU_ACCOUNT` is required for v10.10+ remember-login. No password needed — credentials are cached after first interactive login and reused automatically.
 
 ### Supported variables
 
 | Variable | Maps to | Default |
 |----------|---------|---------|
-| `FUTU_ACCOUNT` | `<login_account>` | _(required)_ |
-| `FUTU_PWD_MD5` | `<login_pwd_md5>` | _(required)_ |
+| `FUTU_ACCOUNT` | CLI `--login_account` arg | _(required)_ |
 | `FUTU_RSA_KEY` | `<rsa_private_key>` | _(required for trading)_ |
 | `FUTU_IP` | `<ip>` | `127.0.0.1` |
 | `FUTU_API_PORT` | `<api_port>` | `11111` |
@@ -380,56 +351,58 @@ docker run \
 
 ## First-Time Login: Phone Verification in Docker
 
-On first login — especially from a new IP or device — Futu sends an SMS verification code. No GUI here, so you relay it through the Telnet debug interface.
+On first login — especially from a new IP or device — Futu sends an SMS or CAPTCHA verification code. No GUI here, so you relay it through the Telnet debug interface on port 22222.
+
+> **Note:** Port 22222 is already exposed in `docker-compose.yaml`. You do not need to configure it separately.
 
 ### How it flows
 
-1. FutuOpenD starts and attempts to log in
-2. Futu's server detects a new device/IP and texts a code to your registered phone
-3. FutuOpenD blocks and waits for your input
-4. You submit the code via Telnet → validation → you're in
+1. `docker compose up -d` starts FutuOpenD
+2. On first run (no cached credentials in the data volume), FutuOpenD enters interactive login and waits for credentials
+3. If Futu's server detects a new device/IP, it sends an SMS or requires CAPTCHA verification
+4. You submit the code via Telnet → validation → credentials cached → remember-login active
 
-### Step 1 — Enable Telnet
-
-In `FutuOpenD.xml`:
-
-```xml
-<telnet_ip>127.0.0.1</telnet_ip>
-<telnet_port>22222</telnet_port>
-```
-
-### Step 2 — Expose the Telnet port
-
-Add the mapping to `docker-compose.yaml`:
-
-```yaml
-ports:
-  - "11111:11111"   # TCP API
-  - "11112:11112"   # WebSocket
-  - "22222:22222"   # Telnet
-```
-
-### Step 3 — Start and watch for the prompt
+### Step 1 — Start and watch the logs
 
 ```bash
 docker compose up -d
 docker compose logs -f futuopend
 ```
 
-When phone verification is needed, you'll see:
+Two things can happen:
+
+**Option A — Remember-login succeeds immediately:**
+
+```
+[INFO] Login succeeded. Account: 12345678
+```
+
+You're in. Skip to Step 5.
+
+**Option B — Phone/CAPTCHA verification is triggered:**
 
 ```
 [INFO] Waiting for phone verify code, please input by telnet...
 [INFO] Use command: input_phone_verify_code -code=123456
 ```
 
-### Step 4 — Submit the code
+### Step 2 — Submit the verification code
 
 ```bash
 echo "input_phone_verify_code -code=123456" | nc 127.0.0.1 22222
 ```
 
-### Step 5 — Confirm success
+For CAPTCHA verification instead of SMS:
+
+```bash
+# First copy the CAPTCHA image from the container
+docker cp futuopend:/home/futuopend/.com.futunn.FutuOpenD/F3CNN/PicVerifyCode.png ./PicVerifyCode.png
+
+# Then submit the code
+echo "input_pic_verify_code -code=YOUR_CODE" | nc 127.0.0.1 22222
+```
+
+### Step 3 — Confirm success
 
 ```bash
 docker compose logs futuopend | grep -i "login\|verify\|success"
@@ -440,6 +413,27 @@ Look for:
 ```
 [INFO] Login succeeded. Account: 12345678
 ```
+
+### Step 4 — Subsequent runs
+
+After the first successful login, FutuOpenD uses remember-login automatically:
+
+```
+[entrypoint] Starting FutuOpenD with remember-login for account: 12345678
+[INFO] Login succeeded. Account: 12345678
+```
+
+No verification needed — credentials are cached in the `futuopend-data` Docker volume.
+
+### Troubleshooting: re-verification triggered
+
+If you see the verification prompt again on a subsequent run, it means Futu's server invalidated the device whitelist. This can happen when:
+
+- You're on a new IP or network
+- Futu reset device registrations server-side
+- The data volume was deleted
+
+Simply submit a new verification code as in Step 2 above. Your existing session will be replaced with a fresh one.
 
 ---
 
@@ -456,9 +450,7 @@ Look for:
   <websocket_ip>0.0.0.0</websocket_ip>
   <websocket_port>11112</websocket_port>
 
-  <!-- Account — env vars keep secrets out of this file -->
-  <login_account>${FUTU_ACCOUNT}</login_account>
-  <login_pwd_md5>${FUTU_PWD_MD5}</login_pwd_md5>
+  <!-- RSA key — required for trading or remote access -->
   <rsa_private_key>${FUTU_RSA_KEY}</rsa_private_key>
 
   <!-- Behaviour -->
@@ -474,9 +466,7 @@ Look for:
   <!-- <websocket_private_key>/run/secrets/ws_key_nopass.pem</websocket_private_key> -->
   <!-- <websocket_cert>/run/secrets/ws_cert.pem</websocket_cert> -->
 
-  <!-- Uncomment to enable Telnet debug console -->
-  <!-- <telnet_ip>127.0.0.1</telnet_ip> -->
-  <!-- <telnet_port>22222</telnet_port> -->
+  <!-- Telnet is always available on port 22222 for verification commands -->
 </futu_opend>
 ```
 

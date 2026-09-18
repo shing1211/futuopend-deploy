@@ -81,13 +81,9 @@ Verify ports are not in use:
 lsof -i :11113
 ```
 
-**Invalid MD5 password hash**
+**Remember-login keeps prompting for verification**
 
-Ensure your password hash is 32 hex characters (no spaces or newlines):
-
-- Linux: `echo -n "password" | md5sum | cut -d' ' -f1`
-- macOS: `md5 -s "password"`
-- Windows: Use an online MD5 generator or PowerShell
+Normal on first run or after a network change. Submit the code via Telnet — see [First-Time Login](../configuration.md#first-time-login-phone-verification-in-docker).
 
 **RSA key not accepted for trading**
 
