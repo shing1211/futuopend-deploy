@@ -33,48 +33,50 @@ jobs:
 
       - name: Read current version
         id: current
-        run: |
-          # README may have CRLF; strip \r first.
-          CURRENT=$(grep -oE 'FutuOpenD-v[0-9]+\.[0-9]+\.[0-9]+' README.md \
-                      | head -1 \
-                      | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' \
-                      || echo "")
-          if [ -z "$CURRENT" ]; then
-            CURRENT=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' FutuOpenD.xml.template \
-                        | head -1 \
-                        | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' \
-                        || echo "")
-          fi
-          if [ -z "$CURRENT" ]; then
-            echo "ERROR: Could not determine current FutuOpenD version" >&2
-            exit 1
-          fi
-          echo "current_version=$CURRENT" >> $GITHUB_OUTPUT
-          echo "Current version: $CURRENT"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let text;
+            try {
+              text = fs.readFileSync('README.md', 'utf-8');
+              const m = text.match(/FutuOpenD-v(\d+\.\d+\.\d+)/);
+              if (m) {
+                core.setOutput('current_version', m[1]);
+                core.info('Current version: ' + m[1]);
+                return;
+              }
+            } catch (e) { }
+            try {
+              text = fs.readFileSync('FutuOpenD.xml.template', 'utf-8');
+              const m = text.match(/v(\d+\.\d+\.\d+)/);
+              if (m) {
+                core.setOutput('current_version', m[1]);
+                core.info('Current version: ' + m[1]);
+                return;
+              }
+            } catch (e) { }
+            core.setFailed('Could not determine current FutuOpenD version');
 
       - name: Patch version files
         run: |
           NEW_VER="${{ inputs.version }}"
           CURRENT="${{ steps.current.outputs.current_version }}"
-          echo "Patching $CURRENT → $NEW_VER..."
+          echo "Patching $CURRENT -> $NEW_VER..."
 
-          # README.md — badge and variant table
           sed -i "s/${CURRENT}/${NEW_VER}/g" README.md
           echo "  patched: README.md"
 
-          # docs/configuration.md
           if [ -f docs/configuration.md ]; then
             sed -i "s/${CURRENT}/${NEW_VER}/g" docs/configuration.md
             echo "  patched: docs/configuration.md"
           fi
 
-          # docs/image-variants.md
           if [ -f docs/image-variants.md ]; then
             sed -i "s/${CURRENT}/${NEW_VER}/g" docs/image-variants.md
             echo "  patched: docs/image-variants.md"
           fi
 
-          # FutuOpenD.xml.template — version comment
           if [ -f FutuOpenD.xml.template ]; then
             sed -i "s/${CURRENT}/${NEW_VER}/g" FutuOpenD.xml.template
             echo "  patched: FutuOpenD.xml.template"
@@ -98,10 +100,53 @@ jobs:
             echo "No changes; already at $NEW_VER."
           fi
 
+      - name: Create version tag
+        run: |
+          NEW_VER="${{ inputs.version }}"
+          git fetch origin --tags
+          git tag -a "v${NEW_VER}" -m "futuopend-deploy v${NEW_VER}"
+          echo "Created tag v${NEW_VER}"
+
+      - name: Push version tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VER="${{ inputs.version }}"
+          git push origin "v${NEW_VER}"
+          echo "Pushed tag v${NEW_VER}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VER="${{ inputs.version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          {
+            echo "## What's Changed"
+            echo ""
+            if [ -n "$PREV_TAG" ]; then
+              git log --no-merges --oneline "${PREV_TAG}..HEAD"
+            else
+              git log --no-merges --oneline
+            fi
+            echo ""
+            if [ -n "$PREV_TAG" ]; then
+              echo "**Full Changelog**: https://github.com/shing1211/futuopend-deploy/compare/${PREV_TAG}...v${NEW_VER}"
+            else
+              echo "**Full Changelog**: https://github.com/shing1211/futuopend-deploy/commits/v${NEW_VER}"
+            fi
+          } > "$RUNNER_TEMP/release_body.md"
+          gh release create "v${NEW_VER}" \
+            --repo shing1211/futuopend-deploy \
+            --title "futuopend-deploy v${NEW_VER}" \
+            --body-path "$RUNNER_TEMP/release_body.md" \
+            --draft=false \
+            --prerelease=false
+          echo "Release v${NEW_VER} created."
+
       - name: Summary
         run: |
           echo "## Version Bump: ${{ inputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Updated `futuopend-deploy` to FutuOpenD **${{ inputs.version }}**." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Next: [Create a release](https://github.com/shing1211/futuopend-deploy/releases/new?tag=v{{ inputs.version }}) for futuopend-deploy." >> $GITHUB_STEP_SUMMARY
+          echo "Created release **v${{ inputs.version }}**." >> $GITHUB_STEP_SUMMARY
