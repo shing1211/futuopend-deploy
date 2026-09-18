@@ -1,0 +1,49 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          cat << 'HEADER' > release-notes.md
+          ## What's Changed
+
+          <!-- cSpell:disable -->
+          HEADER
+          git log --no-merges --oneline $(git describe --tags --abbrev=0 HEAD^)..HEAD >> release-notes.md || true
+          cat << 'FOOTER' >> release-notes.md
+
+          <!-- cSpell:enable -->
+
+          **Full Changelog**: https://github.com/shing1211/futuopend-deploy/compare/v${PREV_TAG}...v${VERSION}
+          FOOTER
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

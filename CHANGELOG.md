@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-09-18
+
+### Security
+
+- Added Trivy container vulnerability scanning to CI
+- Added CodeQL security scanning workflow
+- Added Dependabot for GitHub Actions auto-updates
+
+### Changed
+
+- Docker Compose hardened: resource limits (512M memory), logging rotation (10m/3 files), custom bridge networks
+- Both `docker-compose.yaml` and `docker-compose.multi.yaml` updated with security hardening
+
 ## [1.0.1] - 2026-09-18
 
 ### Changed
