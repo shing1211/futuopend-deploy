@@ -166,7 +166,7 @@ The health check uses `pgrep -x FutuOpenD` to verify the process is running.
 This is normal behavior when Futu's server invalidates the cached device session:
 
 - **What changed in v10.10+:** Remember-login caches credentials after first login. If Futu detects a new device/IP, it requires fresh verification.
-- **Fix:** Submit the verification code via Telnet (see [First-Time Login](../configuration.md#first-time-login-phone-verification-in-docker))
+- **Fix:** Submit the verification code via Telnet (see [First-Time Login](configuration.md#first-time-login-phone-verification-in-docker))
 - **To prevent frequent re-verification:** Keep your Docker data volume (`futuopend-data`) — deleting it forces a fresh login
 
 ---

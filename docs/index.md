@@ -83,7 +83,7 @@ lsof -i :11113
 
 **Remember-login keeps prompting for verification**
 
-Normal on first run or after a network change. Submit the code via Telnet — see [First-Time Login](../configuration.md#first-time-login-phone-verification-in-docker).
+Normal on first run or after a network change. Submit the code via Telnet — see [First-Time Login](configuration.md#first-time-login-phone-verification-in-docker).
 
 **RSA key not accepted for trading**
 
