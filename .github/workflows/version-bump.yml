@@ -35,14 +35,12 @@ jobs:
         id: current
         run: |
           # README may have CRLF; strip \r first.
-          CURRENT=$(tr -d '\r' < README.md \
-                      | grep -oE 'FutuOpenD-v[0-9]+\.[0-9]+\.[0-9]+' \
+          CURRENT=$(grep -oE 'FutuOpenD-v[0-9]+\.[0-9]+\.[0-9]+' README.md \
                       | head -1 \
                       | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' \
                       || echo "")
           if [ -z "$CURRENT" ]; then
-            CURRENT=$(tr -d '\r' < FutuOpenD.xml.template \
-                        | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' \
+            CURRENT=$(grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' FutuOpenD.xml.template \
                         | head -1 \
                         | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' \
                         || echo "")
@@ -60,25 +58,25 @@ jobs:
           CURRENT="${{ steps.current.outputs.current_version }}"
           echo "Patching $CURRENT → $NEW_VER..."
 
-          # README.md — badge and variant table (CRLF-safe)
-          tr -d '\r' < README.md | sed "s/${CURRENT}/${NEW_VER}/g" > README.md.tmp && mv README.md.tmp README.md
+          # README.md — badge and variant table
+          sed -i "s/${CURRENT}/${NEW_VER}/g" README.md
           echo "  patched: README.md"
 
           # docs/configuration.md
           if [ -f docs/configuration.md ]; then
-            tr -d '\r' < docs/configuration.md | sed "s/${CURRENT}/${NEW_VER}/g" > docs/configuration.md.tmp && mv docs/configuration.md.tmp docs/configuration.md
+            sed -i "s/${CURRENT}/${NEW_VER}/g" docs/configuration.md
             echo "  patched: docs/configuration.md"
           fi
 
           # docs/image-variants.md
           if [ -f docs/image-variants.md ]; then
-            tr -d '\r' < docs/image-variants.md | sed "s/${CURRENT}/${NEW_VER}/g" > docs/image-variants.md.tmp && mv docs/image-variants.md.tmp docs/image-variants.md
+            sed -i "s/${CURRENT}/${NEW_VER}/g" docs/image-variants.md
             echo "  patched: docs/image-variants.md"
           fi
 
           # FutuOpenD.xml.template — version comment
           if [ -f FutuOpenD.xml.template ]; then
-            tr -d '\r' < FutuOpenD.xml.template | sed "s/${CURRENT}/${NEW_VER}/g" > FutuOpenD.xml.template.tmp && mv FutuOpenD.xml.template.tmp FutuOpenD.xml.template
+            sed -i "s/${CURRENT}/${NEW_VER}/g" FutuOpenD.xml.template
             echo "  patched: FutuOpenD.xml.template"
           fi
 

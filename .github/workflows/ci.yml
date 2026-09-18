@@ -97,7 +97,7 @@ jobs:
         id: version
         run: |
           # README may have CRLF line endings; strip \r before matching.
-          VER=$(tr -d '\r' < README.md | grep -oE 'FutuOpenD-v[0-9]+\.[0-9]+\.[0-9]+' | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          VER=$(grep -oE 'FutuOpenD-v[0-9]+\.[0-9]+\.[0-9]+' README.md | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
           if [ -z "$VER" ]; then
             echo "ERROR: Could not extract FutuOpenD version from README.md" >&2
             exit 1
