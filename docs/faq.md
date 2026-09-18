@@ -226,6 +226,23 @@ docker compose -f docker-compose.multi.yaml up -d
 | futuopend-a | 11113 | 11114 |
 | futuopend-b | 21113 | 21114 |
 
+### How do I monitor container health?
+
+Use the monitoring stack:
+
+```bash
+docker compose -f docker-compose.monitoring.yaml up -d
+```
+
+Then access:
+- **Grafana:** http://localhost:23000 (admin/admin)
+- **Prometheus:** http://localhost:29090
+- **cAdvisor metrics:** http://localhost:29091/metrics
+
+The Grafana dashboard shows container memory, CPU, network I/O, restart count, and uptime.
+
+> **Note:** Change the Grafana default password immediately after first login.
+
 ---
 
 ## Performance
