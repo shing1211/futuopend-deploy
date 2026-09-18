@@ -12,6 +12,23 @@ This repo provides **Docker Compose configurations** for running FutuOpenD. The 
 
 ---
 
+## Upgrading
+
+When Futu releases a new FutuOpenD version:
+
+1. **Merge the `futuopend` bump PR** (created by the `version-poller.yml` workflow, or manually via `bump-version.sh --commit` in the image repo).
+2. **Trigger the deploy bump** via GitHub Actions:
+
+```bash
+gh workflow run version-bump.yml -f version=10.12.7208 --repo shing1211/futuopend-deploy
+```
+
+This updates: `README.md` badge + variant table, `docs/configuration.md`, `docs/image-variants.md`, `FutuOpenD.xml.template` version comment.
+
+Alternatively, after the `version-poller.yml` PR is merged, the PR body contains this command.
+
+---
+
 ## Quick Start
 
 ```bash
