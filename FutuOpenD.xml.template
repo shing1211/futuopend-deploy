@@ -23,7 +23,7 @@
   <!-- ── Basic Parameters ──────────────────────────────────────────── -->
   <!-- ip                 : Protocol listening address. Default: 127.0.0.1 -->
   <!--                    : Use 0.0.0.0 to accept connections from any interface -->
-  <ip>${FUTU_IP:-127.0.0.1}</ip>
+  <ip>${FUTU_IP:-0.0.0.0}</ip>
 
   <!-- api_port           : TCP API listening port. Default: 11111 -->
   <api_port>${FUTU_API_PORT:-11111}</api_port>
@@ -49,10 +49,10 @@
   <!-- <qot_push_frequency>1000</qot_push_frequency> -->
 
   <!-- telnet_ip          : Telnet debug interface bind address. Default: 127.0.0.1 -->
-  <!-- <telnet_ip>127.0.0.1</telnet_ip> -->
+  <telnet_ip>${FUTU_TELNET_IP:-0.0.0.0}</telnet_ip>
 
-  <!-- telnet_port       : Telnet debug interface port. -->
-  <!-- <telnet_port>22222</telnet_port> -->
+  <!-- telnet_port       : Telnet debug interface port. Required for first-login SMS/CAPTCHA 2FA. -->
+  <telnet_port>${FUTU_TELNET_PORT:-22222}</telnet_port>
 
   <!-- rsa_private_key   : Path to RSA private key for API encryption.
                            REQUIRED for trading over the network (when ip is 0.0.0.0).

@@ -233,14 +233,16 @@ If another terminal kicks you off your quote rights, should FutuOpenD automatica
 
 ### `<telnet_ip>` / `<telnet_port>`
 
-Enable the Telnet debug console. Bind to `127.0.0.1` unless you're on a trusted network.
+Enable the Telnet debug console — required for first-login SMS/CAPTCHA verification. Inside a container it must bind `0.0.0.0` so the published host port can reach it.
 
 ```xml
-<telnet_ip>127.0.0.1</telnet_ip>
+<telnet_ip>0.0.0.0</telnet_ip>
 <telnet_port>22222</telnet_port>
 ```
 
-> **Warning:** Telnet is plaintext. Never expose port `22222` to untrusted networks.
+The shipped `FutuOpenD.xml.template` enables this by default (`${FUTU_TELNET_IP:-0.0.0.0}` / `${FUTU_TELNET_PORT:-22222}`).
+
+> **Warning:** Telnet is plaintext. Keep the host port firewalled/localhost-bound and never expose `22222` to untrusted networks.
 
 ---
 
@@ -338,9 +340,11 @@ docker run \
 
 | Variable | Maps to | Default |
 |----------|---------|---------|
-| `FUTU_ACCOUNT` | CLI `--login_account` arg | _(required)_ |
+| `FUTU_ACCOUNT` | CLI `-login_account` arg | _(required for remember-login)_ |
 | `FUTU_RSA_KEY` | `<rsa_private_key>` | _(required for trading)_ |
-| `FUTU_IP` | `<ip>` | `127.0.0.1` |
+| `FUTU_IP` | `<ip>` | `0.0.0.0` |
+| `FUTU_TELNET_IP` | `<telnet_ip>` | `0.0.0.0` |
+| `FUTU_TELNET_PORT` | `<telnet_port>` | `22222` |
 | `FUTU_API_PORT` | `<api_port>` | `11111` |
 | `FUTU_WS_PORT` | `<websocket_port>` | _(unset)_ |
 | `FUTU_LOG_LEVEL` | `<log_level>` | `info` |
@@ -351,16 +355,31 @@ docker run \
 
 ## First-Time Login: Phone Verification in Docker
 
-On first login — especially from a new IP or device — Futu sends an SMS or CAPTCHA verification code. No GUI here, so you relay it through the Telnet debug interface on port 22222.
+FutuOpenD 10.10+ has **no non-interactive password login**. The account is cached after one successful login; after that `FUTU_ACCOUNT` + remember-login works. So the first login must be interactive (with a TTY) or completed via the Telnet 2FA interface.
 
-> **Note:** Port 22222 is already exposed in `docker-compose.yaml`. You do not need to configure it separately.
+> **Do not set `FUTU_ACCOUNT` for the very first login.** With `FUTU_ACCOUNT` set on an empty volume, OpenD tries remember-login, finds no cached credential, and exits: `登录失败，找不到记住密码信息，请使用账号密码登录`.
 
-### How it flows
+### First login (one time)
 
-1. `docker compose up -d` starts FutuOpenD
-2. On first run (no cached credentials in the data volume), FutuOpenD enters interactive login and waits for credentials
-3. If Futu's server detects a new device/IP, it sends an SMS or requires CAPTCHA verification
-4. You submit the code via Telnet → validation → credentials cached → remember-login active
+Run interactively with `FUTU_ACCOUNT` **unset**, enter account/password, and choose *remember*:
+
+```bash
+docker compose run --rm -it -e FUTU_ACCOUNT= futuopend
+```
+
+If Futu then challenges the device (new IP/device), it prints `Waiting for phone verify code, please input by telnet...` — continue with the Telnet steps below. The cached session is written to the `futuopend-data` volume.
+
+Once logged in, set `FUTU_ACCOUNT` in `.env` and start normally:
+
+```bash
+docker compose up -d
+```
+
+### How verification flows
+
+1. On first run (empty data volume) or a new device, Futu sends an SMS or requires CAPTCHA
+2. OpenD waits: `Waiting for phone verify code, please input by telnet...`
+3. You submit the code via Telnet → validation → credentials cached → remember-login active
 
 ### Step 1 — Start and watch the logs
 
@@ -388,17 +407,26 @@ You're in. Skip to Step 5.
 
 ### Step 2 — Submit the verification code
 
+Use the helper (requires `nc`):
+
 ```bash
-echo "input_phone_verify_code -code=123456" | nc 127.0.0.1 22222
+./scripts/verify_code.sh 123456              # SMS code
 ```
 
-For CAPTCHA verification instead of SMS:
+For CAPTCHA instead of SMS:
 
 ```bash
-# First copy the CAPTCHA image from the container
+# Copy the CAPTCHA image out of the container
 docker cp futuopend:/home/futuopend/.com.futunn.FutuOpenD/F3CNN/PicVerifyCode.png ./PicVerifyCode.png
 
-# Then submit the code
+# Then submit it
+./scripts/verify_code.sh --pic YOUR_CODE
+```
+
+Or raw netcat:
+
+```bash
+echo "input_phone_verify_code -code=123456" | nc 127.0.0.1 22222
 echo "input_pic_verify_code -code=YOUR_CODE" | nc 127.0.0.1 22222
 ```
 
@@ -466,7 +494,9 @@ Simply submit a new verification code as in Step 2 above. Your existing session 
   <!-- <websocket_private_key>/run/secrets/ws_key_nopass.pem</websocket_private_key> -->
   <!-- <websocket_cert>/run/secrets/ws_cert.pem</websocket_cert> -->
 
-  <!-- Telnet is always available on port 22222 for verification commands -->
+  <!-- Telnet for first-login verification commands -->
+  <telnet_ip>0.0.0.0</telnet_ip>
+  <telnet_port>22222</telnet_port>
 </futu_opend>
 ```
 

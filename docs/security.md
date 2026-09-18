@@ -35,7 +35,7 @@ And keep it out of version control — the repo's `.gitignore` handles this.
 
 ### FutuOpenD.xml — built-in default is usually sufficient
 
-The image ships with a built-in `FutuOpenD.xml` at `/usr/local/bin/FutuOpenD/FutuOpenD.xml`. For most users the default works without modification.
+The image ships with a built-in `FutuOpenD.xml` at `/usr/local/bin/FutuOpenD.xml`. The deploy compose mounts your own `./FutuOpenD.xml` over it (OpenD resolves `${VAR}` placeholders itself).
 
 If you need custom settings, mount your own at container startup — but keep sensitive values out of it. v10.10+ remember-login means no password in the config file.
 

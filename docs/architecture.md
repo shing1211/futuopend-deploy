@@ -20,7 +20,7 @@
 │  11114 (WS)    ───►  11112 (FutuOpenD WebSocket)             │
 │                                                              │
 │  Persistent data: /home/futuopend/.com.futunn.FutuOpenD      │
-│  Config file:     /usr/local/bin/FutuOpenD/FutuOpenD.xml     │
+│  Config file:     /usr/local/bin/FutuOpenD.xml                │
 │  RSA key:         /run/secrets/rsa_key.txt                   │
 └──────────────────────────┬───────────────────────────────────┘
                            │
