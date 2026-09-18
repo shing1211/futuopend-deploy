@@ -7,11 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-18
+
 ### Fixed
 
 - `docker-compose.yaml` / `docker-compose.multi.yaml`: re-added the `./FutuOpenD.xml` config mount (dropped in 1.0.6), so the env-substituted template is actually read by OpenD.
 - `docker-compose.multi.yaml`: instance B now publishes Telnet on `22223` (was `22222`, colliding with instance A).
-
 - Config is rendered by the container entrypoint via `envsubst`: `FutuOpenD.xml.template` now uses `${VAR}` (no `:-default`) and `docker-compose*.yaml` supply defaults, because FutuOpenD does not expand environment variables.
 
 ### Changed

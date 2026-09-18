@@ -26,18 +26,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           cat << 'HEADER' > release-notes.md
           ## What's Changed
 
           <!-- cSpell:disable -->
           HEADER
-          git log --no-merges --oneline $(git describe --tags --abbrev=0 HEAD^)..HEAD >> release-notes.md || true
+          if [ -n "$PREV_TAG" ]; then
+            git log --no-merges --oneline "${PREV_TAG}..HEAD" >> release-notes.md || true
+          else
+            git log --no-merges --oneline >> release-notes.md || true
+          fi
           cat << 'FOOTER' >> release-notes.md
 
           <!-- cSpell:enable -->
 
-          **Full Changelog**: https://github.com/shing1211/futuopend-deploy/compare/v${PREV_TAG}...v${VERSION}
           FOOTER
+          if [ -n "$PREV_TAG" ]; then
+            echo "**Full Changelog**: https://github.com/shing1211/futuopend-deploy/compare/${PREV_TAG}...v${VERSION}" >> release-notes.md
+          else
+            echo "**Full Changelog**: https://github.com/shing1211/futuopend-deploy/commits/v${VERSION}" >> release-notes.md
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
