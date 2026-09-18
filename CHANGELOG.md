@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-09-18
+
+### Added
+
+- Custom SVG logo and favicon (blue container whale icon)
+- Custom 404 not-found page with navigation links
+- "Edit this page" links on all documentation pages
+- Version announcement banner (v1.0.4 release notes link)
+- Social links footer (GitHub repo + sponsor link)
+
+### Changed
+
+- mkdocs.yml: navigation.top feature added
+- mkdocs.yml: announcement.dismiss feature added
+
 ## [1.0.4] - 2026-09-18
 
 ### Added
