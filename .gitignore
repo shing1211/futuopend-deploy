@@ -6,6 +6,7 @@ secrets-a/
 secrets-b/
 backups/
 FutuOpenD.xml
+site/
 **/*.pem
 **/*.key
 **/.rsa*
