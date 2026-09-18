@@ -93,32 +93,40 @@ jobs:
     name: Verify Docker image tag exists
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Extract version from README
         id: version
         run: |
-          # README may have CRLF line endings; strip \r before matching.
-          VER=$(grep -oE 'FutuOpenD-v[0-9]+\.[0-9]+\.[0-9]+' README.md | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
-          if [ -z "$VER" ]; then
-            echo "ERROR: Could not extract FutuOpenD version from README.md" >&2
-            exit 1
-          fi
-          echo "version=$VER" >> $GITHUB_OUTPUT
+          SCRIPT=$(mktemp /tmp/get_ver.XXXXXX.py)
+          printf '%s\n' \
+            'import re,sys' \
+            "with open('README.md','rb') as f: content=f.read()" \
+            'text=content.decode("utf-8",errors="replace")' \
+            'm=re.search(r"FutuOpenD-v(\\d+\\.\\d+\\.\\d+)",text)' \
+            'ver=m.group(1) if m else ""' \
+            'print(ver)' \
+            "with open(sys.argv[1],'a') as fh: fh.write('version='+ver+'\\n')" \
+            'sys.exit(0 if ver else 1)' \
+            > "$SCRIPT"
+          VER=$(python3 "$SCRIPT" "$GITHUB_OUTPUT"; grep '^version=' "$GITHUB_OUTPUT" | cut -d= -f2)
           echo "Referenced FutuOpenD version: $VER"
 
       - name: Check tag exists on Docker Hub
-        id: check
         run: |
-          VER="${{ steps.version.outputs.version }}"
-          HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" \
+          VER=$(grep '^version=' "$GITHUB_OUTPUT" | cut -d= -f2)
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
             "https://registry.hub.docker.com/v2/repositories/shing1211/futuopend/tags/${VER}-ubuntu-amd64/")
           if [ "$HTTP_CODE" = "200" ]; then
             echo "Tag shing1211/futuopend:${VER}-ubuntu-amd64 found on Docker Hub."
           else
-            echo "ERROR: Tag shing1211/futuopend:${VER}-ubuntu-amd64 NOT FOUND on Docker Hub (HTTP $HTTP_CODE)."
-            echo "Hint: run 'gh workflow run version-bump.yml -f version=$VER' in futuopend-deploy to update, or build/push the image first."
+            echo "ERROR: Tag shing1211/futuopend:${VER}-ubuntu-amd64 NOT FOUND (HTTP $HTTP_CODE)."
+            echo "Hint: run 'gh workflow run version-bump.yml -f version=$VER' in futuopend-deploy"
             exit 1
           fi
 
       - name: Summary
         run: |
-          echo "Docker image tag **${{ steps.version.outputs.version }}** verified on Docker Hub." >> $GITHUB_STEP_SUMMARY
+          VER=$(grep '^version=' "$GITHUB_OUTPUT" | cut -d= -f2)
+          echo "Docker image tag **$VER** verified on Docker Hub." >> $GITHUB_STEP_SUMMARY
