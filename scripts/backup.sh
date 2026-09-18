@@ -9,7 +9,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BACKUP_DIR="$SCRIPT_DIR/backups"
 VOLUME="futuopend-data"
-COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yaml"
 
 mkdir -p "$BACKUP_DIR"
 

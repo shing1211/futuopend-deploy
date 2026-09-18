@@ -22,10 +22,9 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: yaml
-          queries: security-and-quality
+          languages: actions
 
       - name: Perform Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:yaml"
+          category: "/language:actions"

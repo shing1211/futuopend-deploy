@@ -478,7 +478,7 @@ const quotes = await futu.subscribe([
 - [FutuOpenD.xml Configuration Reference](configuration.md)
 - [Security Hardening Guide](security.md)
 - [Official Futu Protocol Docs](https://openapi.futunn.com/futu-api-doc/en/ftapi/protocol.html)
-- [Python SDK (FutuQuant)](https://github.com/Futuromy/FutuQuant)
+- [Python SDK (futu-api)](https://pypi.org/project/futu-api/)
 
 ---
 
