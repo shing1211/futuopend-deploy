@@ -121,7 +121,7 @@ cp FutuOpenD.xml.template secrets-b/FutuOpenD.xml
 docker compose -f docker-compose.multi.yaml up -d
 ```
 
-Instance `a` uses ports 11111/11112, instance `b` uses 21111/21112.
+Instance `a` uses ports 11113/11114, instance `b` uses 21113/21114.
 
 ---
 
