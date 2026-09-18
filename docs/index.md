@@ -3,7 +3,7 @@
 > Run [FutuOpenD](https://openapi.futunn.com/futu-api-doc/) — the local gateway for Futu's trading API — in Docker.
 
 [![CI](https://github.com/shing1211/futuopend-deploy/actions/workflows/ci.yml/badge.svg)](https://github.com/shing1211/futuopend-deploy/actions/workflows/ci.yml)
-[![FutuOpenD v10.8.6808](https://img.shields.io/badge/FutuOpenD-v10.8.6808-blue)](https://openapi.futunn.com/futu-api-doc/)
+[![FutuOpenD v10.11.7108](https://img.shields.io/badge/FutuOpenD-v10.11.7108-blue)](https://openapi.futunn.com/futu-api-doc/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/shing1211/futuopend-deploy/blob/main/LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/shing1211/futuopend)](https://hub.docker.com/r/shing1211/futuopend)
 [![Docs](https://img.shields.io/badge/Docs-GitHub%20Pages-blue)](https://shing1211.github.io/futuopend-deploy/)

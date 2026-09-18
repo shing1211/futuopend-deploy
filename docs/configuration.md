@@ -18,7 +18,7 @@ The `futuopend` Docker image handles this automatically — set `FUTU_ACCOUNT` i
 
 On first run, FutuOpenD enters interactive login mode, caches your credentials locally, and on subsequent runs logs in automatically via remember-login.
 
-## New in v10.8.6808
+## New in v10.10+
 
 - **Search API** — keyword search to find any asset by ticker, name, or keyword
 - **Search API** — news, announcements, and ratings search (one keyword, results from all sources)

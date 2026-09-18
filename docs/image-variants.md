@@ -11,7 +11,7 @@ Pull the variant that matches your platform:
 | `:rocky-arm64` | Rocky Linux 9 | arm64 | ARM + RHEL compat |
 | `:centos-amd64` | Rocky Linux 9 | amd64 | CentOS backward compat |
 | `:centos-arm64` | Rocky Linux 9 | arm64 | ARM + CentOS compat |
-| `:10.8.6808-*` | Both | Both | Version-pinned, e.g. `:10.8.6808-ubuntu-arm64` |
+| `:10.11.7108-*` | Both | Both | Version-pinned, e.g. `:10.11.7108-ubuntu-arm64` |
 
 ## Pulling a Specific Variant
 
