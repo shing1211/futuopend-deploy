@@ -52,11 +52,14 @@ chmod 600 secrets/rsa_key.txt
 
 ### 4. Start
 
-Generate an RSA key at [Futu OpenAPI](https://www.futunn.com/en/OpenAPI) → Manage Key, save as `secrets/rsa_key.txt`, then:
-
 ```bash
-chmod 600 secrets/rsa_key.txt
+docker compose up -d
+docker compose logs -f
 ```
+
+Nothing is exposed beyond `127.0.0.1` by default. To reach the API from another
+machine, use an SSH tunnel — see [Network Security](security.md#two-ways-in-and-how-to-choose)
+for that and for the RSA alternative.
 
 ### 5. (Optional) Set platform for ARM
 

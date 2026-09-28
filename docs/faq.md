@@ -86,6 +86,59 @@ FutuOpenD v10.10+ caches your login credentials locally after the first successf
 
 ## Troubleshooting
 
+### Container restarting in a loop after login fails
+
+**Treat this as an account-safety issue, not a cosmetic one.** A container
+that exits and restarts while attempting to log in consumes **Futu login
+attempts**, and enough of them can lock the account.
+
+Stop it first:
+
+```bash
+docker compose down
+```
+
+Then read the actual reason:
+
+```bash
+docker compose logs futuopend | tail -20
+```
+
+| Message | Cause | Fix |
+|---|---|---|
+| `Unable to find remembered password` | `FUTU_ACCOUNT` is set but the volume has no cached credential | Unset `FUTU_ACCOUNT` and redo the [interactive first login](configuration.md#first-login-one-time) |
+| Login prompt appears, then nothing | A pre-10.10 build cannot remember-login and fell back to password auth | `docker compose pull`; current images refuse to start in this state |
+| `Account and password do not match (N attempts left)` | An image older than 10.10 retrying password auth | `docker compose down`, `docker compose pull`, then log in again |
+
+The third row is the dangerous one and is the reason the image now refuses to
+run remember-login on a build older than 10.10.
+
+Once fixed, confirm you are genuinely logged in — a listening port on its
+own does not mean the session authenticated:
+
+```bash
+docker compose logs futuopend | grep -E 'Login successful|Required data is ready'
+docker compose exec -T futuopend ls /home/futuopend/.com.futunn.FutuOpenD/Log | grep GTWLog
+#   GTWLog_<account>_... is good; GTWLog_0_... means the login never happened
+```
+
+### Login appears to hang after entering the account
+
+Not a hang — the prompts come on two different channels. The account is
+read from stdin, but the password prompt is delivered **only to telnet clients**.
+Without a published telnet port there are no clients, so the password prompt
+goes nowhere and the terminal simply stops responding.
+
+```bash
+# terminal 1
+docker compose run --rm -it -p 127.0.0.1:22222:22222 -e FUTU_ACCOUNT= futuopend
+
+# terminal 2
+telnet 127.0.0.1 22222
+```
+
+See [First-Time Login](configuration.md#first-login-one-time) for the full flow.
+
 ### Port 11113 not responding
 
 1. **Check container is running:**

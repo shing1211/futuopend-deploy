@@ -363,13 +363,74 @@ FutuOpenD 10.10+ has **no non-interactive password login**. The account is cache
 
 ### First login (one time)
 
-Run interactively with `FUTU_ACCOUNT` **unset**, enter account/password, and choose *remember*:
+The login prompts arrive on **two different channels**, which is the single
+thing most likely to trip you up:
+
+| Prompt | Where it appears | Where you type |
+|---|---|---|
+| `Please enter account` | the terminal running the container | **stdin** — needs `-it` |
+| `Please enter password` | only telnet clients | **telnet** — needs the port published |
+| SMS / CAPTCHA code | only telnet clients | **telnet**, as a command |
+
+Because of that, the container appears to **hang** after you submit the
+account if the telnet port was not published: the password prompt is being
+sent to telnet clients, and there are none. No error, no timeout — just a
+terminal that stops responding.
+
+**Terminal 1** — publish the telnet port and enter the account:
 
 ```bash
-docker compose run --rm -it -e FUTU_ACCOUNT= futuopend
+docker compose run --rm -it -p 127.0.0.1:22222:22222 -e FUTU_ACCOUNT= futuopend
 ```
 
-If Futu then challenges the device (new IP/device), it prints `Waiting for phone verify code, please input by telnet...` — continue with the Telnet steps below. The cached session is written to the `futuopend-data` volume.
+Type the account at the prompt. It will then appear to hang — that is expected.
+
+**Terminal 2** — enter the password, then any verification code:
+
+```bash
+telnet 127.0.0.1 22222
+```
+
+Choose *remember* when asked. That is what caches the credential in the
+`futuopend-data` volume and makes every later start unattended.
+
+Telnet commands need a carriage return and newline (`\r\n`). `scripts/verify_code.sh`
+handles this for you.
+
+### Verify the login actually worked
+
+A listening port does **not** mean you are logged in — the port is opened
+before authentication completes. Check both of these:
+
+```bash
+# 1. FutuOpenD reports success in its log
+docker compose logs futuopend | grep -E 'Login successful|Required data is ready'
+
+# 2. The data volume has a per-account log, not a GTWLog_0_ one
+docker compose exec -T futuopend ls /home/futuopend/.com.futunn.FutuOpenD/Log | grep GTWLog
+#   good: GTWLog_<your-account>_2026-01-01_00-00-00.log
+#   bad:  GTWLog_0_... — account 0, the login never happened
+```
+
+Only then set `FUTU_ACCOUNT` in `.env` and start normally:
+
+```bash
+docker compose up -d
+```
+
+If the container instead exits immediately and Docker restarts it in a loop,
+stop it and read the message before retrying — a crash loop here consumes
+**Futu login attempts** and can lock the account:
+
+```bash
+docker compose down
+docker compose logs futuopend | tail -20
+```
+
+`Unable to find remembered password` means `FUTU_ACCOUNT` was set on an empty
+volume — unset it and redo the interactive login. A version older than
+10.10 cannot remember-login at all; the image now refuses to start in that
+case rather than falling back to password auth.
 
 Once logged in, set `FUTU_ACCOUNT` in `.env` and start normally:
 
