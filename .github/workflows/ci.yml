@@ -54,6 +54,43 @@ jobs:
             echo "No .env file found, skipping validation"
           fi
 
+      - name: Validate bind-mount sources
+        run: |
+          # FutuOpenD.xml is mounted read-only with create_host_path:false, so a
+          # missing file stops the container. It is gitignored, so CI must supply
+          # the template to prove the compose config resolves.
+          # Check the directory case first: a missing bind-mount source is
+          # silently created as a directory by Docker, which shadows the config
+          # and leaves FutuOpenD unable to start.
+          if [ -d FutuOpenD.xml ]; then
+            echo "ERROR: FutuOpenD.xml is a directory, not a file."
+            echo "Docker creates missing bind-mount sources as directories; delete it and"
+            echo "run: cp FutuOpenD.xml.template FutuOpenD.xml"
+            exit 1
+          fi
+          if [ ! -f FutuOpenD.xml ]; then
+            echo "::warning::FutuOpenD.xml absent (expected: it is gitignored)"
+            cp FutuOpenD.xml.template FutuOpenD.xml
+            created=1
+          else
+            echo "FutuOpenD.xml present"
+          fi
+          # An RSA key is optional. If the mount is enabled, the file must exist,
+          # otherwise Docker would create a directory in its place. Match only
+          # uncommented lines -- the default is a commented-out example block.
+          if grep -Eq '^[[:space:]]*source: \./secrets/rsa_key\.txt' docker-compose.yaml; then
+            if [ ! -f secrets/rsa_key.txt ]; then
+              echo "ERROR: rsa_key.txt volume is enabled but secrets/rsa_key.txt is missing."
+              echo "Either create the key, or comment the volume out in docker-compose.yaml."
+              exit 1
+            fi
+            echo "rsa_key.txt mount is enabled and the file is present"
+          else
+            echo "rsa_key.txt mount is commented out (optional) - OK"
+          fi
+          [ "${created:-0}" = "1" ] && rm -f FutuOpenD.xml
+          exit 0
+
   shellcheck:
     runs-on: ubuntu-latest
     steps:

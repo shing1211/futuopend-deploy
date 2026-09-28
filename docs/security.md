@@ -75,6 +75,14 @@ cp rsa_key.txt secrets/rsa_key.txt
 chmod 600 secrets/rsa_key.txt
 ```
 
+```bash
+# then uncomment the rsa_key.txt volume in docker-compose.yaml
+# and set FUTU_RSA_KEY=/run/secrets/rsa_key.txt in .env
+```
+
+The volume is commented out by default so that a missing key cannot become an
+empty directory that quietly shadows it.
+
 Trade-offs, and one that is easy to miss:
 
 - **The RSA private key is a shared secret.** Clients do not get a public key to

@@ -20,8 +20,24 @@ services:
       - FUTU_PRICE_REMINDER=${FUTU_PRICE_REMINDER:-1}
       - FUTU_FUTURE_TZ=${FUTU_FUTURE_TZ:-UTC+8}
     volumes:
-      - ./FutuOpenD.xml:/usr/local/bin/FutuOpenD.xml:ro
-      - ./secrets/rsa_key.txt:/run/secrets/rsa_key.txt:ro
+      # create_host_path:false makes a missing source a hard error. Without it
+      # Docker silently creates a *directory* at the source, which shadows the
+      # config and leaves FutuOpenD unable to start -- with no useful message.
+      - type: bind
+        source: ./FutuOpenD.xml
+        target: /usr/local/bin/FutuOpenD.xml
+        read_only: true
+        bind:
+          create_host_path: false
+      # RSA is opt-in, so the mount is opt-in too. Uncomment once you have a key
+      # at ./secrets/rsa_key.txt (see docs/security.md). Leaving it uncommented
+      # without the file would make Docker create a directory in its place.
+      # - type: bind
+      #   source: ./secrets/rsa_key.txt
+      #   target: /run/secrets/rsa_key.txt
+      #   read_only: true
+      #   bind:
+      #     create_host_path: false
       - futuopend-data:/home/futuopend/.com.futunn.FutuOpenD
     ports:
       # Host-side binding is the real security boundary. The container's own
