@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Breaking:** `docker-compose.yaml`: all published ports now bind to `127.0.0.1` by default instead of `0.0.0.0`. Telnet is a plaintext command interface and was reachable from the whole network, which contradicted the guidance in `docs/security.md`. Deployments that need direct remote access must set `FUTU_API_BIND=0.0.0.0` (and supply an RSA key) or reach the API through an SSH tunnel -- see [Network Security](docs/security.md#two-ways-in-and-how-to-choose).
+- **Breaking:** the `./secrets/rsa_key.txt` volume is now a commented-out example rather than an active bind, and `FUTU_RSA_KEY` defaults to empty. Docker silently creates a missing bind-mount source as a *directory*, so an RSA deployment with no key file was pointing the daemon at a directory. Uncomment the volume and set `FUTU_RSA_KEY=/run/secrets/rsa_key.txt` to keep using RSA.
+- `FutuOpenD.xml` is now mounted with `bind.create_host_path: false`, so a missing config file fails immediately instead of being silently created as a directory that leaves FutuOpenD unable to start.
+- `scripts/verify_code.sh`: `nc` closed the connection as soon as stdin reached EOF, so a verification code was sent but the reply was usually lost and the operator could not tell whether it had been accepted. The raw-netcat examples in the docs also sent a bare `\n` where the telnet parser needs `\r\n`.
+- `docs/quick-start.md`: step 4 was titled "Start" but contained a second copy of the RSA instructions and no start command.
+- `docs/security.md`: removed a duplicated Firewall section and the now-superseded "Local binding" / "Remote access" sections. WebSocket TLS guidance is kept and rescoped to WebSocket, since the TCP API uses FutuOpenD's own RSA/AES scheme.
+
+### Changed
+
+- `docker-compose.yaml`: dropped the `healthcheck` override so the image's TCP probe applies. `pgrep -x FutuOpenD` reports healthy for a process that is alive but not serving -- e.g. hung on a login prompt, or bound to nothing.
+- Port mappings are configurable via `FUTU_API_BIND`, `FUTU_API_PORT_HOST`, `FUTU_WS_BIND`, and `FUTU_TELNET_BIND`. Defaults keep everything on loopback.
+- `.env.example`: documents `FUTU_NO_MONITOR`, which the entrypoint already read but which was never listed, and clarifies that `FUTU_TELNET_IP` binds inside the container while `FUTU_TELNET_BIND` controls host exposure.
+
+### Added
+
+- `docs/configuration.md`: the login prompts arrive on **two different channels** -- the account prompt is printed to stdout and read from stdin, while the password and verification prompts are delivered only to telnet clients. Without a published telnet port the first login appears to hang after the account is entered, with no error and no timeout. The documented command now works.
+- `docs/configuration.md` and `docs/faq.md`: a "verify the login actually worked" step. A listening port does not mean the session authenticated, since the port opens before login completes; check FutuOpenD's `Login successful` log and a per-account `GTWLog_<account>_` file rather than `GTWLog_0_`.
+- `docs/faq.md`: crash-looping entry framed as an account-safety issue -- each restart consumes a Futu login attempt, and enough of them can lock the account. Includes a table mapping each distinct log message to its fix.
+- `docs/security.md`: SSH tunnel vs. RSA comparison, including that the RSA private key is a **shared secret** every client must hold, and that clients must pass `is_encrypt=True` (it defaults to `None`, which resolves to disabled, so a client that forgets connects in plaintext with no error).
+- CI: validates bind-mount sources, catching a `FutuOpenD.xml` directory and an enabled-but-missing RSA key.
+
+### Migration
+
+Existing `.env` files need one of:
+
+- nothing, if loopback + SSH tunnel is acceptable (the new default);
+- `FUTU_API_BIND=0.0.0.0` plus an RSA key, for direct remote access; or
+- the `secrets/rsa_key.txt` volume uncommented and `FUTU_RSA_KEY=/run/secrets/rsa_key.txt`, to restore RSA.
+
+`FutuOpenD.xml` must exist as a file: `cp FutuOpenD.xml.template FutuOpenD.xml`.
+
 ## [1.1.0] - 2026-09-18
 
 ### Fixed
