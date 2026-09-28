@@ -24,9 +24,10 @@ For FutuOpenD API issues or trading-related questions, contact [Futu OpenAPI Sup
 3. **Make your changes** following the guidelines below
 4. **Test locally**:
    ```bash
-   # Validate compose files
-   docker-compose -f docker-compose.yaml config --quiet
-   docker-compose -f docker-compose.multi.yaml config --quiet
+   # Validate the compose file, including every profile
+   docker compose config --quiet
+   docker compose --profile multi config --quiet
+   docker compose --profile monitoring config --quiet
 
    # Run shellcheck on scripts (if available)
    shellcheck scripts/*.sh
@@ -44,7 +45,7 @@ For FutuOpenD API issues or trading-related questions, contact [Futu OpenAPI Sup
 #### Docker Compose Files
 
 - Validate all compose files with `docker compose config --quiet` before committing
-- Keep both `docker-compose.yaml` and `docker-compose.multi.yaml` in sync when adding new features
+- Keep the single `docker-compose.yaml` in sync across all profiles when adding features
 - Use `${VAR:-default}` syntax for environment variable substitutions
 - Include `container_name` for predictable container identification
 - Use `restart: unless-stopped` for production-ready configurations
@@ -96,7 +97,7 @@ Examples:
 Before opening a PR, verify:
 
 - [ ] `docker-compose -f docker-compose.yaml config --quiet` passes
-- [ ] `docker-compose -f docker-compose.multi.yaml config --quiet` passes
+- [ ] `docker compose --profile multi config --quiet` passes
 - [ ] All new environment variables are documented in `.env.example`
 - [ ] README.md reflects any new features or changes
 - [ ] Documentation updated if changing configuration options

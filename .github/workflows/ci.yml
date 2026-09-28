@@ -24,8 +24,30 @@ jobs:
       - name: Validate docker-compose.yaml
         run: docker compose -f docker-compose.yaml config --quiet
 
-      - name: Validate docker-compose.multi.yaml
-        run: docker compose -f docker-compose.multi.yaml config --quiet
+      # One compose file, three shapes. Validate every profile, not just the
+      # default: a typo inside a profiled service is invisible otherwise.
+      - name: Validate compose profiles
+        run: |
+          docker compose --profile multi config --quiet
+          docker compose --profile monitoring config --quiet
+          docker compose --profile multi --profile monitoring config --quiet
+
+      - name: Assert no non-loopback port bindings
+        run: |
+          for p in "" "--profile multi" "--profile monitoring"; do
+            docker compose $p config | python3 -c '
+          import sys, yaml
+          d = yaml.safe_load(sys.stdin)
+          bad = [(n, p.get("published"))
+                 for n, s in d["services"].items()
+                 for p in s.get("ports", [])
+                 if p.get("host_ip") not in ("127.0.0.1", None)]
+          if bad:
+              print("Non-loopback port bindings:", bad, file=sys.stderr)
+              sys.exit(1)
+          '
+          done
+          echo "all published ports default to loopback"
 
       - name: YAML lint
         run: |

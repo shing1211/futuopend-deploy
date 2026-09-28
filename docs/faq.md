@@ -261,7 +261,7 @@ docker run --rm \
 
 ### How do I run multiple instances?
 
-Use `docker-compose.multi.yaml` for two accounts side-by-side:
+Use the `multi` profile for two accounts side-by-side:
 
 ```bash
 cp .env.example .env-a
@@ -271,7 +271,7 @@ mkdir -p secrets-a secrets-b
 # add RSA keys if trading:
 # cp key_a.txt secrets-a/rsa_key.txt && chmod 600 secrets-a/rsa_key.txt
 # cp key_b.txt secrets-b/rsa_key.txt && chmod 600 secrets-b/rsa_key.txt
-docker compose -f docker-compose.multi.yaml up -d
+docker compose --profile multi up -d
 ```
 
 | Instance | TCP Port | WebSocket Port |
@@ -284,7 +284,7 @@ docker compose -f docker-compose.multi.yaml up -d
 Use the monitoring stack:
 
 ```bash
-docker compose -f docker-compose.monitoring.yaml up -d
+docker compose --profile monitoring up -d
 ```
 
 Then access:

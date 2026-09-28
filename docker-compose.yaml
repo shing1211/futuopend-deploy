@@ -1,28 +1,71 @@
+# FutuOpenD — single compose file, three deployment shapes via profiles.
+#
+#   docker compose up -d                        # single instance (default)
+#   docker compose --profile multi up -d        # two accounts side-by-side
+#   docker compose --profile monitoring up -d   # Prometheus + Grafana + cAdvisor
+#   docker compose --profile multi --profile monitoring up -d   # both
+#
+# Services carrying a `profiles:` key stay inert until that profile is enabled,
+# so the default single-instance run is unaffected by the extra services.
+#
+# Host-side port bindings are the real security boundary and default to
+# loopback. The container's own FUTU_IP / FUTU_TELNET_IP stay 0.0.0.0 because
+# the container has a private network namespace — only these mappings are
+# reachable from the host. See docs/security.md.
+#
+# There is no healthcheck override for the futuopend services: the image ships a
+# TCP probe of the API port, which is a real service check. Overriding it with
+# `pgrep -x FutuOpenD` would report healthy for a process that is alive but not
+# serving.
+
+x-futu-common: &futu-common
+  image: ${FUTU_IMAGE:-shing1211/futuopend:latest}
+  restart: unless-stopped
+  platform: linux/${PLATFORM:-amd64}
+  stop_grace_period: 30s
+  deploy:
+    resources:
+      limits:
+        memory: 512M
+      reservations:
+        memory: 256M
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+      compress: "true"
+
+x-futu-env: &futu-env
+  - TZ=${TZ:-Asia/Hong_Kong}
+  - FUTU_IP=${FUTU_IP:-0.0.0.0}
+  - FUTU_API_PORT=${FUTU_API_PORT:-11111}
+  - FUTU_LANG=${FUTU_LANG:-en}
+  - FUTU_LOG_LEVEL=${FUTU_LOG_LEVEL:-info}
+  - FUTU_PUSH_PROTO=${FUTU_PUSH_PROTO:-0}
+  - FUTU_TELNET_IP=${FUTU_TELNET_IP:-0.0.0.0}
+  - FUTU_TELNET_PORT=${FUTU_TELNET_PORT:-22222}
+  # Empty by default: an RSA key is only needed when the API is reachable
+  # off-host, and pointing at a path that is not mounted silently disables RSA.
+  - FUTU_RSA_KEY=${FUTU_RSA_KEY:-}
+  - FUTU_PRICE_REMINDER=${FUTU_PRICE_REMINDER:-1}
+  - FUTU_FUTURE_TZ=${FUTU_FUTURE_TZ:-UTC+8}
+
+# The FutuOpenD.xml mount uses long syntax with create_host_path:false, which
+# makes a missing source a hard error. Without it Docker silently creates a
+# *directory* at the source, which shadows the config and leaves FutuOpenD unable
+# to start — with no useful message.
+
 services:
+  # ── Default: single instance ────────────────────────────────────────────────
   futuopend:
-    image: ${FUTU_IMAGE:-shing1211/futuopend:latest}
+    <<: *futu-common
     container_name: futuopend
-    restart: unless-stopped
-    platform: linux/${PLATFORM:-amd64}
     env_file:
       - path: .env
         required: false
-    environment:
-      - TZ=${TZ:-Asia/Hong_Kong}
-      - FUTU_IP=${FUTU_IP:-0.0.0.0}
-      - FUTU_API_PORT=${FUTU_API_PORT:-11111}
-      - FUTU_LANG=${FUTU_LANG:-en}
-      - FUTU_LOG_LEVEL=${FUTU_LOG_LEVEL:-info}
-      - FUTU_PUSH_PROTO=${FUTU_PUSH_PROTO:-0}
-      - FUTU_TELNET_IP=${FUTU_TELNET_IP:-0.0.0.0}
-      - FUTU_TELNET_PORT=${FUTU_TELNET_PORT:-22222}
-      - FUTU_RSA_KEY=${FUTU_RSA_KEY:-/run/secrets/rsa_key.txt}
-      - FUTU_PRICE_REMINDER=${FUTU_PRICE_REMINDER:-1}
-      - FUTU_FUTURE_TZ=${FUTU_FUTURE_TZ:-UTC+8}
+    environment: *futu-env
     volumes:
-      # create_host_path:false makes a missing source a hard error. Without it
-      # Docker silently creates a *directory* at the source, which shadows the
-      # config and leaves FutuOpenD unable to start -- with no useful message.
       - type: bind
         source: ./FutuOpenD.xml
         target: /usr/local/bin/FutuOpenD.xml
@@ -40,30 +83,9 @@ services:
       #     create_host_path: false
       - futuopend-data:/home/futuopend/.com.futunn.FutuOpenD
     ports:
-      # Host-side binding is the real security boundary. The container's own
-      # FUTU_IP / FUTU_TELNET_IP stay 0.0.0.0 because the container has a private
-      # network namespace -- only these mappings are reachable from the host.
-      # Defaults below expose nothing beyond loopback; see .env.example for the
-      # RSA-direct alternative.
       - "${FUTU_API_BIND:-127.0.0.1}:${FUTU_API_PORT_HOST:-11113}:11111"
       - "${FUTU_WS_BIND:-127.0.0.1}:11114:11112"
       - "${FUTU_TELNET_BIND:-127.0.0.1}:22222:22222"
-    # No healthcheck override: the image ships a TCP probe of the API port, which
-    # is a real service check. Overriding it with `pgrep -x FutuOpenD` would
-    # report healthy for a process that is alive but not serving.
-    stop_grace_period: 30s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-        compress: "true"
     labels:
       org.opencontainers.image.title: "FutuOpenD Deploy"
       org.opencontainers.image.description: "Docker Compose configuration for FutuOpenD gateway"
@@ -73,9 +95,161 @@ services:
     networks:
       - futuopend-net
 
+  # ── profile: multi — two accounts side by side ──────────────────────────────
+  # Each instance reads its own env file, so the accounts stay separate.
+  #   cp .env.example .env-a   # set FUTU_ACCOUNT
+  #   cp .env.example .env-b   # set FUTU_ACCOUNT
+  futuopend-a:
+    <<: *futu-common
+    profiles: [multi]
+    container_name: futuopend-a
+    env_file:
+      - path: .env-a
+        required: false
+    environment: *futu-env
+    volumes:
+      - type: bind
+        source: ./FutuOpenD.xml
+        target: /usr/local/bin/FutuOpenD.xml
+        read_only: true
+        bind:
+          create_host_path: false
+      - ./secrets-a/rsa_key.txt:/run/secrets/rsa_key.txt:ro
+      - futuopend-data-a:/home/futuopend/.com.futunn.FutuOpenD
+    ports:
+      - "${FUTU_API_BIND:-127.0.0.1}:${FUTU_API_PORT_A:-11113}:11111"
+      - "${FUTU_WS_BIND:-127.0.0.1}:${FUTU_WS_PORT_A:-11114}:11112"
+      - "${FUTU_TELNET_BIND:-127.0.0.1}:${FUTU_TELNET_PORT_A:-22222}:22222"
+    labels:
+      org.opencontainers.image.title: "FutuOpenD Deploy (Instance A)"
+      org.opencontainers.image.source: "https://github.com/shing1211/futuopend-deploy"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    networks:
+      - futuopend-net-a
+
+  futuopend-b:
+    <<: *futu-common
+    profiles: [multi]
+    container_name: futuopend-b
+    env_file:
+      - path: .env-b
+        required: false
+    environment: *futu-env
+    volumes:
+      - type: bind
+        source: ./FutuOpenD.xml
+        target: /usr/local/bin/FutuOpenD.xml
+        read_only: true
+        bind:
+          create_host_path: false
+      - ./secrets-b/rsa_key.txt:/run/secrets/rsa_key.txt:ro
+      - futuopend-data-b:/home/futuopend/.com.futunn.FutuOpenD
+    ports:
+      - "${FUTU_API_BIND:-127.0.0.1}:${FUTU_API_PORT_B:-21113}:11111"
+      - "${FUTU_WS_BIND:-127.0.0.1}:${FUTU_WS_PORT_B:-21114}:11112"
+      - "${FUTU_TELNET_BIND:-127.0.0.1}:${FUTU_TELNET_PORT_B:-22223}:22222"
+    labels:
+      org.opencontainers.image.title: "FutuOpenD Deploy (Instance B)"
+      org.opencontainers.image.source: "https://github.com/shing1211/futuopend-deploy"
+      org.opencontainers.image.licenses: "Apache-2.0"
+    networks:
+      - futuopend-net-b
+
+  # ── profile: monitoring ─────────────────────────────────────────────────────
+  # Grafana: http://localhost:23000 (admin/admin, or set GRAFANA_PASSWORD)
+  # Prometheus: http://localhost:29090
+  # cAdvisor: http://localhost:29091/metrics
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus:v3.14.0
+    container_name: futuopend-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-29090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - monitoring-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  cadvisor:
+    profiles: [monitoring]
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    container_name: futuopend-cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "127.0.0.1:${CADVISOR_PORT:-29091}:8080"
+    networks:
+      - monitoring-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  grafana:
+    profiles: [monitoring]
+    image: grafana/grafana:13.2.2
+    container_name: futuopend-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-23000}:3000"
+    volumes:
+      - ./monitoring/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/dashboards:/var/lib/grafana/dashboards
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
+    networks:
+      - monitoring-net
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 networks:
   futuopend-net:
+    driver: bridge
+  futuopend-net-a:
+    driver: bridge
+  futuopend-net-b:
+    driver: bridge
+  monitoring-net:
     driver: bridge
 
 volumes:
   futuopend-data:
+  futuopend-data-a:
+  futuopend-data-b:
+  prometheus-data:
+  grafana-data:

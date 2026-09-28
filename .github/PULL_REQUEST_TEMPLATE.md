@@ -20,7 +20,7 @@
 
 <!-- Before submitting, make sure you have completed the following: -->
 - [ ] I have tested my changes locally with `docker compose -f docker-compose.yaml config --quiet`
-- [ ] I have validated both `docker-compose.yaml` and `docker-compose.multi.yaml` configurations
+- [ ] I have validated every profile: `docker compose --profile multi config --quiet` and `--profile monitoring`
 - [ ] I have run `yamllint` on all YAML files (if installed)
 - [ ] I have run `shellcheck` on all shell scripts (if installed)
 - [ ] Documentation has been updated to reflect any changes

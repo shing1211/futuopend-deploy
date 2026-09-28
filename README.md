@@ -99,24 +99,25 @@ emulation (~2-5x slower than native). For latency-sensitive trading on Pi, consi
 [box64](https://github.com/ptitSeb/box64) — install it on the host and the container
 uses it automatically.
 
-## Compose Variants
+## Compose Profiles
 
-Choose the file that matches your use case:
+One `docker-compose.yaml`, three deployment shapes. Services behind a profile
+stay inert until you enable it, so the default run is unaffected.
 
-| File | Use Case | Command |
-|------|----------|---------|
-| `docker-compose.yaml` | Single futuopend instance (default) | `docker compose up -d` |
-| `docker-compose.multi.yaml` | High Availability — two instances with automatic failover | `docker compose -f docker-compose.multi.yaml up -d` |
-| `docker-compose.monitoring.yaml` | Monitoring add-on — Prometheus + Grafana + cAdvisor | `docker compose -f docker-compose.monitoring.yaml up -d` |
+| Profile | Use Case | Command |
+|---------|----------|---------|
+| _(none)_ | Single futuopend instance (default) | `docker compose up -d` |
+| `multi` | Two instances, two accounts (ports 11113 / 21113) | `docker compose --profile multi up -d` |
+| `monitoring` | Prometheus + Grafana + cAdvisor | `docker compose --profile monitoring up -d` |
 
-**Note:** The multi-instance deployment runs two independent futuopend containers
-(ports 11113 and 21113) for HA scenarios. Both instances share the same Docker host
-but have separate configs, volumes, and networks.
-
-**Combine futuopend + monitoring:**
+**Combine multi + monitoring:**
 ```bash
-docker compose -f docker-compose.yaml -f docker-compose.monitoring.yaml up -d
+docker compose --profile multi --profile monitoring up -d
 ```
+
+**Note:** The `multi` profile runs two independent futuopend containers with
+separate env files, volumes and networks. See
+[Multi-Instance Deployment](docs/multi-instance.md).
 
 ---
 
@@ -124,9 +125,7 @@ docker compose -f docker-compose.yaml -f docker-compose.monitoring.yaml up -d
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.yaml` | Single-instance deployment (default) |
-| `docker-compose.multi.yaml` | High Availability deployment (two instances) |
-| `docker-compose.monitoring.yaml` | Monitoring stack (Prometheus + Grafana + cAdvisor) |
+| `docker-compose.yaml` | All deployment shapes, selected by profile (`multi`, `monitoring`) |
 | `.env.example` | Runtime env vars template |
 | `FutuOpenD.xml.template` | Config template with env-var substitution |
 | `secrets/` | Your config and keys (gitignored) |
@@ -157,7 +156,7 @@ mkdir -p secrets-a secrets-b
 # mount RSA keys if trading:
 # cp key_a.txt secrets-a/rsa_key.txt && chmod 600 secrets-a/rsa_key.txt
 # cp key_b.txt secrets-b/rsa_key.txt && chmod 600 secrets-b/rsa_key.txt
-docker compose -f docker-compose.multi.yaml up -d
+docker compose --profile multi up -d
 ```
 
 Instance `a` uses ports 11113/11114, instance `b` uses 21113/21114.
