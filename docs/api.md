@@ -229,12 +229,17 @@ help
 
 **Phone Verification:**
 ```
-[INFO] Waiting for phone verify code, please input by telnet...
-[INFO] Use command: input_phone_verify_code -code=123456
+Waiting for phone verify code, please input by telnet...
+Use command: input_phone_verify_code -code=123456
 
-# Submit code:
-echo "input_phone_verify_code -code=123456" | nc 127.0.0.1 22222
+# Submit code (the trailing sleep matters: nc drops the connection as soon as
+# stdin reaches EOF, which can cut off the reply before you see it):
+{ printf 'input_phone_verify_code -code=123456\r\n'; sleep 2; } | nc 127.0.0.1 22222
 ```
+
+> Command names are **case-sensitive**, and the **lowercase** spelling is the one
+> this build accepts. Futu's doc page shows a capital `I`; that form is rejected
+> as *Unknown command*. Check the exact list with `help` on the telnet port.
 
 ---
 

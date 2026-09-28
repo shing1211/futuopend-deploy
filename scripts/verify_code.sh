@@ -8,6 +8,12 @@
 #
 # Override the target with HOST / PORT env vars (default 127.0.0.1:22222).
 #
+# Telnet command names are case-sensitive, and the lowercase spelling is the one
+# this build accepts. The capitalised forms shown on Futu's doc page are rejected
+# as "Unknown command". Verified against 10.11.7108: `help` lists them lowercase,
+# and the two spellings answer "Command not available during the current period"
+# vs "Unknown command" respectively.
+#
 # For a CAPTCHA, first copy the image out of the container:
 #   docker cp futuopend:/home/futuopend/.com.futunn.FutuOpenD/F3CNN/PicVerifyCode.png .
 #
@@ -28,4 +34,7 @@ if ! command -v nc >/dev/null 2>&1; then
 fi
 
 echo "==> ${HOST}:${PORT} <- ${COMMAND}"
-printf '%s\r\n' "$COMMAND" | nc "$HOST" "$PORT"
+# Hold stdin open after sending: nc closes the moment stdin reaches EOF, which can
+# tear the connection down before FutuOpenD replies. The trailing sleep gives the
+# server time to answer.
+{ printf '%s\r\n' "$COMMAND"; sleep "${WAIT:-2}"; } | nc "$HOST" "$PORT"

@@ -425,12 +425,17 @@ docker cp futuopend:/home/futuopend/.com.futunn.FutuOpenD/F3CNN/PicVerifyCode.pn
 ./scripts/verify_code.sh --pic YOUR_CODE
 ```
 
-Or raw netcat:
+Or raw netcat (the trailing `sleep` matters — `nc` drops the connection the moment
+stdin reaches EOF, which can cut off the reply):
 
 ```bash
-echo "input_phone_verify_code -code=123456" | nc 127.0.0.1 22222
-echo "input_pic_verify_code -code=YOUR_CODE" | nc 127.0.0.1 22222
+{ printf 'input_phone_verify_code -code=123456\r\n'; sleep 2; } | nc 127.0.0.1 22222
+{ printf 'input_pic_verify_code -code=YOUR_CODE\r\n'; sleep 2; } | nc 127.0.0.1 22222
 ```
+
+> Command names are **case-sensitive**, and the **lowercase** spelling is the one this
+> build accepts. Futu's doc page shows a capital `I` (`Input_phone_verify_code`); that
+> form is rejected as *Unknown command*.
 
 ### Step 3 — Confirm success
 
