@@ -24,15 +24,17 @@ services:
       - ./secrets/rsa_key.txt:/run/secrets/rsa_key.txt:ro
       - futuopend-data:/home/futuopend/.com.futunn.FutuOpenD
     ports:
-      - "11113:11111"
-      - "11114:11112"
-      - "22222:22222"
-    healthcheck:
-      test: ["CMD", "pgrep", "-x", "FutuOpenD"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      # Host-side binding is the real security boundary. The container's own
+      # FUTU_IP / FUTU_TELNET_IP stay 0.0.0.0 because the container has a private
+      # network namespace -- only these mappings are reachable from the host.
+      # Defaults below expose nothing beyond loopback; see .env.example for the
+      # RSA-direct alternative.
+      - "${FUTU_API_BIND:-127.0.0.1}:${FUTU_API_PORT_HOST:-11113}:11111"
+      - "${FUTU_WS_BIND:-127.0.0.1}:11114:11112"
+      - "${FUTU_TELNET_BIND:-127.0.0.1}:22222:22222"
+    # No healthcheck override: the image ships a TCP probe of the API port, which
+    # is a real service check. Overriding it with `pgrep -x FutuOpenD` would
+    # report healthy for a process that is alive but not serving.
     stop_grace_period: 30s
     deploy:
       resources:

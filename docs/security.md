@@ -43,23 +43,101 @@ If you need custom settings, mount your own at container startup — but keep se
 
 ## Network Security
 
-### Local binding — the safe default
+### Two ways in, and how to choose
 
-FutuOpenD binds to `127.0.0.1` by default. Only local processes can reach it — the network can't touch it. This is the right mode for single-machine setups:
+The stock compose file binds every published port to `127.0.0.1`, so nothing is
+reachable from the network. Remote clients need one of two options.
 
-```xml
-<ip>127.0.0.1</ip>
-<api_port>11111</api_port>
+**Option A - SSH tunnel (recommended default).** Nothing is exposed; the client
+opens a tunnel to the host.
+
+```bash
+# on the remote client
+ssh -N -L 11113:127.0.0.1:11113 user@host
 ```
 
-### Remote access — TLS is non-negotiable
+No key to distribute, no listener on the internet, and traffic is encrypted by
+SSH. Leave the bindings at their defaults and this just works.
 
-If another machine needs to connect, the WebSocket traffic must be encrypted. Generate a certificate and key, then:
+**Option B - RSA, direct access.** The API is published on a routable address
+and protected by FutuOpenD's own protocol encryption.
+
+```bash
+# .env
+FUTU_API_BIND=0.0.0.0
+FUTU_RSA_KEY=/run/secrets/rsa_key.txt
+```
+
+```bash
+mkdir -p secrets
+# generate at https://www.futunn.com/en/OpenAPI -> Manage Key
+cp rsa_key.txt secrets/rsa_key.txt
+chmod 600 secrets/rsa_key.txt
+```
+
+Trade-offs, and one that is easy to miss:
+
+- **The RSA private key is a shared secret.** Clients do not get a public key to
+  encrypt with; the SDK loads *the same private key the server uses* to wrap the
+  per-session AES key. Every client that connects therefore holds the server's
+  private key. Distributing it widens the blast radius, so treat it like a
+  credential and use per-client copies if that matters to you.
+- **Clients must opt in explicitly.** `is_encrypt` defaults to `None`, which
+  resolves to *disabled* -- a client that forgets it connects unencrypted and no
+  error is raised:
+
+  ```python
+  from futu import OpenQuoteContext
+  q = OpenQuoteContext(host='api.example.com', port=11113, is_encrypt=True)
+  ```
+
+- **The key is not set by default here.** With `FUTU_IP=0.0.0.0` inside the
+  container, trading calls are rejected unless `rsa_private_key` is configured.
+  Quote-only access works without it.
+
+Whichever you pick, keep `FUTU_TELNET_BIND` on `127.0.0.1`. Telnet is plaintext
+and is only needed for the interactive first login and 2FA, both of which happen
+on the host itself. Note that `FUTU_TELNET_IP` (in-container) must stay
+`0.0.0.0` for a published port to reach it -- the two are different things, and
+the host-side binding is the one that controls exposure.
+
+### Firewall - default deny
+
+If you bind the API broadly, restrict it to the clients that need it:
+
+```bash
+# Allow only your client subnet
+iptables -A INPUT -p tcp --dport 11113 -s 10.0.0.0/8 -j ACCEPT
+iptables -A INPUT -p tcp --dport 11113 -j DROP
+```
+
+> The port to filter is the **host** port (`11113` by default, or
+> `FUTU_API_PORT_HOST`), not the container's `11111`.
+
+Or isolate FutuOpenD inside a Docker internal network so it can't reach the
+outside world except where you explicitly allow:
+
+```yaml
+services:
+  futuopend:
+    networks:
+      - futu-internal
+
+networks:
+  futu-internal:
+    internal: true   # No external egress by default
+```
+
+
+### WebSocket clients — TLS required off-host
+
+The above covers the TCP API. WebSocket pushes are a separate listener and must be encrypted with a certificate if anything off-host subscribes to it:
 
 ```xml
-<ip>0.0.0.0</ip>
+<websocket_ip>0.0.0.0</websocket_ip>
 <websocket_private_key>/run/secrets/ws_key_nopass.pem</websocket_private_key>
 <websocket_cert>/run/secrets/ws_cert.pem</websocket_cert>
+<websocket_port>33333</websocket_port>
 ```
 
 Generate a self-signed cert for testing:
@@ -73,28 +151,7 @@ openssl req -x509 -newkey rsa:4096 \
 openssl rsa -in secrets/key.pem -out secrets/key_nopass.pem
 ```
 
-> **Better yet** for remote access: use a VPN (WireGuard, Tailscale) or an SSH tunnel. Encryption without managing certificates.
-
-### Firewall — default deny
-
-```bash
-# Allow only your client subnet
-iptables -A INPUT -p tcp --dport 11111 -s 10.0.0.0/8 -j ACCEPT
-iptables -A INPUT -p tcp --dport 11111 -j DROP
-```
-
-Or isolate FutuOpenD inside a Docker internal network so it can't reach the outside world except where you explicitly allow:
-
-```yaml
-services:
-  futuopend:
-    networks:
-      - futu-internal
-
-networks:
-  futu-internal:
-    internal: true   # No external egress by default
-```
+Leave `FUTU_WS_BIND` on `127.0.0.1` unless you need off-host subscriptions.
 
 ---
 
