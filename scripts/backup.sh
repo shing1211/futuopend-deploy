@@ -49,7 +49,7 @@ usage() {
     cat <<EOF
 Usage: $0 [--restore FILE.tar.gz] [--volume NAME]
 
-  (no args)            create a backup of the futuopend data volume
+  (no args) or backup  create a backup of the futuopend data volume
   --restore FILE       restore the volume from a previous archive
   --volume NAME        override the volume name (default: auto-detected)
 
@@ -128,6 +128,11 @@ case "${1:-}" in
         usage
         ;;
     "")
+        do_backup
+        ;;
+    backup)
+        # The no-arg form above is the documented one, but `backup` is what people
+        # reach for first, so accept it rather than printing usage.
         do_backup
         ;;
     *)
