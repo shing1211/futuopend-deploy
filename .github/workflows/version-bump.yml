@@ -33,7 +33,7 @@ jobs:
 
       - name: Read current version
         id: current
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
