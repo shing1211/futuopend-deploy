@@ -161,7 +161,7 @@ services:
   # cAdvisor: http://localhost:29091/metrics
   prometheus:
     profiles: [monitoring]
-    image: prom/prometheus:v3.14.0
+    image: prom/prometheus:v3.15.0
     container_name: futuopend-prometheus
     restart: unless-stopped
     command:
