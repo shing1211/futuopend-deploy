@@ -1,0 +1,293 @@
+#!/usr/bin/env bash
+# futuopend — control and inspect the FutuOpenD gateway on this host.
+#
+# The gateway used to be a `./FutuOpenD` typed into a tty on 2026-10-12 and left
+# running unsupervised. systemd owns the process now; this CLI is how an operator
+# talks to it.
+#
+#   futuopend                 the status card (same as `status`)
+#   futuopend status [-q]     unit · version · endpoint · login · session · recent errors
+#   futuopend status --json   the same facts, machine-readable
+#   futuopend accounts        the account list the gateway serves
+#   futuopend health          endpoint + a live quote + latency (exit 1 if unhealthy)
+#   futuopend start|stop|restart
+#   futuopend logs [-f] [n]   journal tail, errors highlighted
+#   futuopend version         running version vs what is on disk
+#   futuopend backup          snapshot /opt/futuopend, print the path
+#   futuopend upgrade <ver> [--yes]
+#
+# Environment: FUTU_ACCOUNT (REQUIRED for the login display), FUTU_PORT (default 11111),
+#              FUTU_HOST (default 127.0.0.1), NO_COLOR=1 to disable colour.
+
+set -uo pipefail
+
+SERVICE="futuopend.service"
+DIR="/opt/futuopend"
+PORT="${FUTU_PORT:-11111}"
+HOST="${FUTU_HOST:-127.0.0.1}"
+ACCOUNT="${FUTU_ACCOUNT:-}"   # set it; there is deliberately no default
+KEY="$DIR/.futu/keys/private_key.pem"
+DATA="${HOME}/.com.futunn.FutuOpenD"
+LOG_DIR="$DATA/Log"
+
+# ── presentation ──────────────────────────────────────────────────────────────
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+    B=$'\033[1m'; DIM=$'\033[2m'; R=$'\033[0m'
+    GRN=$'\033[32m'; RED=$'\033[31m'; YEL=$'\033[33m'; CYA=$'\033[36m'
+else
+    B=""; DIM=""; R=""; GRN=""; RED=""; YEL=""; CYA=""
+fi
+
+say()  { printf '%s\n' "$*" >&2; }
+head_() { printf '\n%s%s%s\n' "$B" "$1" "$R"; }
+row()  { printf '  %s%-11s%s %s\n' "$DIM" "$1" "$R" "$2"; }
+ok()   { printf '%s%s%s' "$GRN" "$1" "$R"; }
+bad()  { printf '%s%s%s' "$RED" "$1" "$R"; }
+warn() { printf '%s%s%s' "$YEL" "$1" "$R"; }
+
+# ── probes (cheap, no API connection) ─────────────────────────────────────────
+unit_active()   { systemctl is-active "$SERVICE" 2>/dev/null || true; }
+unit_enabled()  { systemctl is-enabled "$SERVICE" 2>/dev/null || true; }
+unit_pid()      { systemctl show -p MainPID --value "$SERVICE" 2>/dev/null || echo 0; }
+unit_since()    { systemctl show -p ActiveEnterTimestamp --value "$SERVICE" 2>/dev/null; }
+unit_restarts() { systemctl show -p NRestarts --value "$SERVICE" 2>/dev/null || echo 0; }
+
+port_open() {
+    (exec 3<>"/dev/tcp/${HOST}/${PORT}") 2>/dev/null && { exec 3>&- 3<&-; return 0; } || return 1
+}
+
+newest_log() { ls -t "$LOG_DIR"/GTWLog_*.log 2>/dev/null | head -1; }
+
+running_version() {
+    local log; log="$(newest_log)"
+    [ -n "${log:-}" ] && grep -aoE "Futu OpenD version info: [0-9.]+" "$log" 2>/dev/null \
+        | tail -1 | awk '{print $NF}' || echo "unknown"
+}
+
+disk_version() {
+    # The binary has no --version flag, so the install writes VERSION at upgrade
+    # time; the tarball name is the fallback for an install that predates it.
+    if [ -r "$DIR/VERSION" ]; then cat "$DIR/VERSION"; return; fi
+    local v
+    v="$(ls "${HOME}"/futuopend-dl/Futu_OpenD_*.tar.gz 2>/dev/null | sed 's/.*Futu_OpenD_\([0-9.]*\)_.*/\1/' | sort -V | tail -1)"
+    echo "${v:-unknown}"
+}
+
+login_state() {
+    local log; log="$(newest_log)"
+    [ -n "${log:-}" ] || { echo "no-log"; return; }
+    # a successful login renames the GTW log to the account id
+    if [ -n "$ACCOUNT" ] && basename "$log" | grep -q "GTWLog_${ACCOUNT}_"; then echo "logged-in"
+    elif grep -aq "Login successful" "$log" 2>/dev/null; then echo "logged-in"
+    else echo "not-logged-in"; fi
+}
+
+session_size() { du -sh "$DATA" 2>/dev/null | cut -f1; }
+
+recent_errors() {
+    local log; log="$(newest_log)"
+    [ -n "${log:-}" ] || { echo 0; return; }
+    local n; n="$(grep -aciE "OutputErr|Login failed|ERROR" "$log" 2>/dev/null || true)"
+    echo "${n:-0}"
+}
+
+# ── commands ──────────────────────────────────────────────────────────────────
+cmd_status() {
+    local json=0 quiet=0
+    while [ $# -gt 0 ]; do
+        case "$1" in --json) json=1 ;; -q|--quiet) quiet=1 ;; esac; shift
+    done
+
+    local st en pid since rest log ver disk login sess errs endpoint
+    st="$(unit_active)"; en="$(unit_enabled)"; pid="$(unit_pid)"
+    since="$(unit_since)"; rest="$(unit_restarts)"; log="$(newest_log)"
+    ver="$(running_version)"; disk="$(disk_version)"; login="$(login_state)"
+    sess="$(session_size)"; errs="$(recent_errors)"
+    if port_open; then endpoint="open"; else endpoint="closed"; fi
+
+    if [ "$json" = 1 ]; then
+        printf '{"unit":"%s","enabled":"%s","pid":%s,"since":"%s","restarts":%s,"version":"%s","on_disk":"%s","endpoint":"%s","host":"%s","port":%s,"login":"%s","account":"%s","session_bytes_h":"%s","recent_errors":%s}\n' \
+            "$st" "$en" "${pid:-0}" "$since" "${rest:-0}" "$ver" "$disk" "$endpoint" "$HOST" "$PORT" "$login" "$ACCOUNT" "$sess" "${errs:-0}"
+        [ "$st" = "active" ] && port_open && [ "$login" = "logged-in" ]; return $?
+    fi
+
+    # ── the card ──
+    local badge
+    case "$st" in
+        active)   badge="${GRN}● active${R}" ;;
+        activating) badge="${YEL}● activating${R}" ;;
+        failed)   badge="${RED}● failed${R}" ;;
+        *)        badge="${RED}● ${st:-unknown}${R}" ;;
+    esac
+    printf '\n  %sFutuOpenD%s  %s' "$B" "$R" "$badge"
+    [ "${pid:-0}" != "0" ] && printf '  %spid %s%s' "$DIM" "$pid" "$R"
+    printf '\n  %s%s%s\n' "$DIM" "$(printf '─%.0s' $(seq 1 58))" "$R"
+
+    row "version"  "$ver   ${DIM}(on disk: ${disk})${R}"
+    local ep
+    if [ "$endpoint" = "open" ]; then ep="$(ok open)"; else ep="$(bad closed)"; fi
+    row "endpoint" "$(printf '%-14s' "$ep") ${HOST}:${PORT}"
+    local acct; acct="$(printf '%-14s' "${ACCOUNT:-<unset>}")"
+    if [ "$login" = "logged-in" ]; then row "login" "$acct $(ok "remembered session")"; else row "login" "$acct $(bad "NOT logged in")"; fi
+    row "session"  "${sess:-?}   ${DIM}${DATA/#$HOME/\~}${R}"
+    row "boot"     "$([ "$en" = enabled ] && ok "auto-start" || bad "disabled")   ${DIM}${st}, restarts ${rest:-0}${R}"
+    if [ -n "${log:-}" ]; then
+        row "log"  "${DIM}$(basename "$log")  ·  $(date -r "$log" '+%H:%M:%S')${R}"
+    fi
+    if [ "${errs:-0}" = "0" ]; then row "errors" "$(ok none)   ${DIM}in the current log${R}"
+    else row "errors" "$(warn "$errs")   ${DIM}in the current log${R}"; fi
+    printf '\n'
+
+    [ "$st" = "active" ] && [ "$endpoint" = "open" ] && [ "$login" = "logged-in" ]
+    return $?
+}
+
+cmd_accounts() {
+    port_open || { say "gateway ${HOST}:${PORT} is closed — nothing to ask"; return 1; }
+    python3 - "$HOST" "$PORT" "$KEY" <<'PY'
+import sys, logging
+logging.disable(logging.CRITICAL)          # the SDK logs every connect at INFO
+try:
+    import futu
+except ImportError:
+    print("  python3 has no `futu` module here — run this from the trading host", file=sys.stderr)
+    raise SystemExit(2)
+host, port, key = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+futu.SysConfig.enable_proto_encrypt(True)
+futu.SysConfig.set_init_rsa_file(key)
+ctx = futu.OpenSecTradeContext(host=host, port=port)
+ret, data = ctx.get_acc_list()
+rows = [] if data is None else list(data.iterrows())
+print(f"  {len(rows)} account(s) · ret={ret}")
+if rows:
+    print(f"  {'ACCOUNT':>20}  {'ENV':<9} AUTHORITY")
+    for _, r in rows:
+        auth = r.get('trdmarket_auth') or []
+        auth = [a for a in auth]
+        print(f"  {str(r.get('acc_id')):>20}  {str(r.get('trd_env')):<9} {', '.join(map(str, auth))}")
+    sim = sum(1 for _, r in rows if str(r.get('trd_env')).upper() == 'SIMULATE')
+    print(f"\n  {sim} simulate · {len(rows) - sim} real")
+ctx.close()
+PY
+}
+
+cmd_health() {
+    if ! port_open; then
+        printf '  FAIL endpoint %s:%s is closed\n' "$HOST" "$PORT"
+        return 1
+    fi
+    local t0 t1 out
+    t0=$(date +%s%3N)
+    out="$(python3 - "$HOST" "$PORT" "$KEY" <<'PYHEALTH' 2>/dev/null
+import sys, logging
+logging.disable(logging.CRITICAL)
+import futu
+host, port, key = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+futu.SysConfig.enable_proto_encrypt(True)
+futu.SysConfig.set_init_rsa_file(key)
+q = futu.OpenQuoteContext(host=host, port=port)
+ret, data = q.get_market_snapshot(["US.AAPL"])
+print(f"AAPL last={data.iloc[0].get('last_price')}" if ret == 0 and data is not None and len(data) else "FAILED")
+q.close()
+PYHEALTH
+)"
+    t1=$(date +%s%3N)
+    if [ -z "$out" ] || [ "$out" = "FAILED" ]; then
+        printf '  FAIL endpoint open, but the quote read failed\n'
+        return 1
+    fi
+    printf '  OK   quote %s   %s%5s ms%s\n' "$out" "$DIM" "$((t1 - t0))" "$R"
+}
+
+cmd_logs() {
+    local follow=() n=40 unit=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -f|--follow) follow=(-f) ;;
+            -u|--unit)   unit=1 ;;
+            *)           n="$1" ;;
+        esac; shift
+    done
+    if [ "$unit" = 1 ]; then
+        # The UNIT's lifecycle (start/stop/exit reason). The OpenD writes binary to
+        # stdout, so journald shows it as "[NNB blob data]" -- the readable log is
+        # the gateway's own file, which is the default below.
+        journalctl -u "$SERVICE" -n "$n" --no-pager "${follow[@]}" 2>/dev/null
+        return
+    fi
+    local log; log="$(newest_log)"
+    [ -n "${log:-}" ] || { printf '  no gateway log yet in %s\n' "$LOG_DIR"; return 1; }
+    printf '  %s%s%s\n' "$DIM" "${log/#$HOME/\~}" "$R"
+    if [ "${follow[0]:-}" = "-f" ]; then
+        tail -n "$n" -f "$log"
+    else
+        tail -n "$n" "$log" | sed -E "s/(ERROR|FAIL|failed|refused)/\x1b[31m\1\x1b[0m/g"
+    fi
+}
+
+cmd_version() {
+    row "running" "$(running_version)"
+    row "on disk" "$(disk_version)   ${DIM}${DIR}${R}"
+    local old
+    old="$(ls -d "${HOME}"/futuopend_backup_* 2>/dev/null | tail -1)"
+    [ -n "$old" ] && row "rollback" "${DIM}${old/#$HOME/\~}${R}"
+    return 0
+}
+
+cmd_backup() {
+    local dest
+    dest="${HOME}/futuopend_backup_$(date +%Y%m%d_%H%M%S)"
+    cp -a "$DIR" "$dest" || { say "$(bad 'FAIL') backup failed"; return 1; }
+    row "backup" "${dest/#$HOME/\~}   ${DIM}$(du -sh "$dest" 2>/dev/null | cut -f1)${R}"
+}
+
+cmd_upgrade() {
+    local version="" assume=0
+    while [ $# -gt 0 ]; do
+        case "$1" in --yes|-y) assume=1 ;; *) version="$1" ;; esac; shift
+    done
+    [ -n "$version" ] || { say "usage: futuopend upgrade <version> [--yes]"; return 2; }
+    local tgz="${HOME}/futuopend-dl/Futu_OpenD_${version}_Ubuntu18.04.tar.gz"
+    local url="https://softwaredownload.futunn.com/Futu_OpenD_${version}_Ubuntu18.04.tar.gz"
+
+    say "  ${B}upgrade ${version}${R}  ${DIM}(current: $(running_version))${R}"
+    if [ "$assume" != 1 ]; then
+        printf '  this stops the gateway for ~1 min and needs a remembered session. continue? [y/N] ' >&2
+        read -r a; case "$a" in y|Y) ;; *) say "  cancelled"; return 1 ;; esac
+    fi
+    say "  ${DIM}1/5${R} backup";            cmd_backup
+    say "  ${DIM}2/5${R} download";           mkdir -p "${HOME}/futuopend-dl"
+    curl -sSL --max-time 600 -o "$tgz" "$url" || { say "  $(bad FAIL) download failed"; return 1; }
+    say "        $(ls -lh "$tgz" | awk '{print $5}')  sha256 $(sha256sum "$tgz" | cut -c1-16)…"
+    say "  ${DIM}3/5${R} extract"
+    local stage="${HOME}/futuopend-dl/${version}"; rm -rf "$stage"; mkdir -p "$stage"
+    tar xzf "$tgz" -C "$stage" --strip-components=2 \
+        "Futu_OpenD_${version}_Ubuntu18.04/Futu_OpenD_${version}_Ubuntu18.04" || { say "  $(bad FAIL) extract failed"; return 1; }
+    say "  ${DIM}4/5${R} install  ${DIM}(live FutuOpenD.xml + RSA key preserved)${R}"
+    sudo systemctl stop "$SERVICE" >/dev/null 2>&1 || true
+    sudo cp -a "$stage/." "$DIR/"
+    sudo cp -a "${HOME}/futuopend/FutuOpenD.xml" "$DIR/FutuOpenD.xml.rollback-$(date +%Y%m%d)" 2>/dev/null || true
+    sudo cp -a "${HOME}/futuopend/.futu" "$DIR/.futu" 2>/dev/null || true
+    sudo chown -R tchan:tchan "$DIR"
+    printf '%s\n' "$version" | sudo tee "$DIR/VERSION" >/dev/null
+    say "  ${DIM}5/5${R} start"
+    sudo systemctl start "$SERVICE"
+    sleep 10
+    cmd_status
+}
+
+case "${1:-status}" in
+    status)   shift; cmd_status "$@" ;;
+    accounts) cmd_accounts ;;
+    health)   cmd_health ;;
+    start)    sudo systemctl start "$SERVICE" && cmd_status ;;
+    stop)     sudo systemctl stop "$SERVICE" && say "  $(warn stopped)" ;;
+    restart)  sudo systemctl restart "$SERVICE" && sleep 5 && cmd_status ;;
+    logs)     shift; cmd_logs "$@" ;;
+    version)  cmd_version ;;
+    backup)   cmd_backup ;;
+    upgrade)  shift; cmd_upgrade "$@" ;;
+    -h|--help|help)
+        sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *)        say "usage: futuopend {status|accounts|health|start|stop|restart|logs|version|backup|upgrade}"; exit 2 ;;
+esac

@@ -30,6 +30,7 @@ See the [Quick Start](quick-start.md) guide to get up and running.
 - [Image Variants](image-variants.md)
 - [Scripts Reference](scripts.md)
 - [Multi-Instance Deployment](multi-instance.md)
+- [Bare-metal install (systemd)](bare-metal-systemd.md)
 - [API Protocol Reference](api.md)
 - [Configuration Reference](configuration.md)
 - [Security Hardening Guide](security.md)

@@ -62,6 +62,26 @@ curl http://localhost:11113/version
 
 ---
 
+## Bare-metal install (systemd)
+
+Not every host runs Docker. [`docs/bare-metal-systemd.md`](docs/bare-metal-systemd.md)
+covers the supervised non-container install: the headless binary under
+`/opt/futuopend`, a **systemd unit**, and a **`futuopend` CLI** —
+
+```bash
+futuopend                 # status card: unit · version · endpoint · login · session · errors
+futuopend accounts        # the account list the gateway serves
+futuopend health          # live quote + latency, exit 1 if unhealthy
+futuopend upgrade 10.12.7208   # backup → download → verify → install → restart
+```
+
+Files: [`systemd/futuopend.service`](systemd/futuopend.service) ·
+[`bin/futuopend`](bin/futuopend).
+
+> Two facts that page exists for: from **10.10** the XML password is ignored (the
+> gateway needs a *remembered session* from one interactive login), and that session
+> lives in `$HOME/.com.futunn.FutuOpenD`, so the unit's `HOME` is load-bearing.
+
 ## Platform Options
 
 The compose file uses `platform: linux/${PLATFORM:-amd64}`. Set `PLATFORM` in `.env`:
