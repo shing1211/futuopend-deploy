@@ -1,0 +1,33 @@
+[Unit]
+Description=FutuOpenD — venue gateway for the Futu trading API (port 11111)
+Documentation=https://openapi.futunn.com/futu-api-doc/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tchan
+Group=tchan
+
+# LOAD-BEARING: FutuOpenD 10.10+ keeps its remembered session in
+# $HOME/.com.futunn.FutuOpenD (4.6 GB here). A different HOME means a fresh
+# interactive login and a 2FA prompt, which no service can satisfy. This is why
+# the unit runs as `tchan` rather than a dedicated user with a clean HOME.
+Environment=HOME=/home/tchan
+WorkingDirectory=/opt/futuopend
+
+# 10.10+ no longer reads login_account/login_pwd from the XML: the remembered
+# session is selected by -login_by_remember=1. Put YOUR Futu login account id in
+# CHANGE_ME below -- it is the account you logged in with in the one-time
+# interactive step (see docs/bare-metal-systemd.md).
+ExecStart=/opt/futuopend/FutuOpenD -login_account=CHANGE_ME -login_by_remember=1 -api_port=11111
+
+# The gateway is the estate's only venue line: restart it, do not leave it down.
+Restart=on-failure
+RestartSec=10
+# The binary is a launcher plus a worker; stopping must take the whole group.
+TimeoutStopSec=30
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
