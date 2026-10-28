@@ -1,0 +1,59 @@
+name: leak-guard
+
+# This is a PUBLIC deployment guide. Neither rule can be left to the secret
+# scanners: Trivy and CodeQL look for credentials, and a Futu account id is an
+# identifier, not a credential -- it sails past both (#20). The shapes are
+# checked here, without embedding any real value.
+#
+# Two deliberate limits, each learned by running it:
+#   * this file is excluded, because it necessarily contains the patterns;
+#   * the key-material rule scans code and config only -- a deployment guide must
+#     be able to say "the key starts with -----BEGIN RSA PRIVATE KEY-----" without
+#     failing. A real key would live in code or config, which are still scanned.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  no-account-identifiers:
+    name: no account ids or secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: a login account id belongs on the host, never here
+        run: |
+          set -uo pipefail
+          fail=0
+          files=$(find . -type f -not -path './.git/*' -not -name 'leak-guard.yml' -print)
+          # The unit ships `-login_account=CHANGE_ME`; a real id looks like digits.
+          if printf '%s\n' "$files" | xargs grep -InE 'login_account=[0-9]{4,}' 2>/dev/null; then
+            echo "::error::a real Futu login account id is in the tree — ship CHANGE_ME instead"
+            fail=1
+          fi
+          # Brokers number accounts with ~18 digits.
+          if printf '%s\n' "$files" | xargs grep -InE '\b[0-9]{18,}\b' 2>/dev/null; then
+            echo "::error::an account number is in the tree"
+            fail=1
+          fi
+          exit $fail
+
+      - name: no key or token material in code or config
+        run: |
+          set -uo pipefail
+          fail=0
+          files=$(find . -type f \
+            \( -name '*.service' -o -name '*.sh' -o -name '*.yaml' -o -name '*.yml' \
+               -o -name '*.json' -o -name '*.env' -o -name '*.env.*' -o -name '*.py' \
+               -o -name 'Dockerfile*' -o -name '*.template' \) \
+            -not -path './.git/*' -not -name 'leak-guard.yml' -print)
+          if [ -n "$files" ] && printf '%s\n' "$files" \
+               | xargs grep -IlE 'BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}' 2>/dev/null; then
+            echo "::error::key or token material is in code or config"
+            fail=1
+          fi
+          exit $fail
