@@ -23,7 +23,7 @@ jobs:
     name: no account ids or secrets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: a login account id belongs on the host, never here
         run: |
