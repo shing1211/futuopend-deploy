@@ -210,7 +210,7 @@ services:
 
   grafana:
     profiles: [monitoring]
-    image: grafana/grafana:13.2.4
+    image: grafana/grafana:13.3.0
     container_name: futuopend-grafana
     restart: unless-stopped
     ports:
